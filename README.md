@@ -27,7 +27,10 @@ O sistema trabalha com três entidades principais:
 - **Fiscal**: responsável por realizar o cadastramento dos flanelinhas.
 - **Flanelinha**: pessoa cadastrada pelo fiscal, vinculada a um ponto de atuação.
 - **Carteira**: documento digital emitido para o flanelinha, com histórico de emissões (permite renovação e segunda via).
-Relacionamentos: um Fiscal cadastra vários Flanelinhas; um Flanelinha pode possuir várias Carteiras ao longo do tempo.
+
+## Relacionamentos: 
+1 - um Fiscal cadastra vários Flanelinhas; 
+2 - um Flanelinha pode possuir várias Carteiras ao longo do tempo.
 
 ## Modelo Entidade Relacionamento
 [Flanelinha_app_der.pdf](https://github.com/user-attachments/files/29651556/Flanelinha_app_der.pdf)
