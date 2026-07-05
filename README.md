@@ -33,7 +33,7 @@ O sistema trabalha com três entidades principais:
 2 - um Flanelinha pode possuir várias Carteiras ao longo do tempo.
 
 ## Modelo Entidade Relacionamento
-[Flanelinha_app_der.pdf]
+<img width="1754" height="1240" alt="Flanelinha_app_der_page-0001" src="https://github.com/user-attachments/assets/32bb7979-547c-46ad-8ad7-9c85aaa5d014" />
 
   
 
