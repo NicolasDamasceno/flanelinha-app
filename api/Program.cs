@@ -1,4 +1,6 @@
 using api.Data;
+using api.Interfaces;
+using api.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
@@ -15,6 +17,8 @@ builder.Services.AddDbContext<ApplicationDBContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
+builder.Services.AddScoped<IFlanelinhaRepository, FlanelinhaRepository>();
+builder.Services.AddScoped<IFiscalRepository, FiscalRepository>();
 
 var app = builder.Build();
 
