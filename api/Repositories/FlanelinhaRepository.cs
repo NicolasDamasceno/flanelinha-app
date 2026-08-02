@@ -38,14 +38,9 @@ namespace api.Repositories
 
         public async Task<int> GetProximoNumeroCarterinhaAsync(CancellationToken ct = default)
         {
-            var existeAlguma = await _context.Carterinhas.AnyAsync(ct);
-            if (!existeAlguma)
-            {
-                return 1;
-            }
-
-            var maiorNumero = await _context.Carterinhas.MaxAsync(c => c.NumeroCarterinha, ct);
-            return maiorNumero + 1;
+            var maiorNumero = await _context.Carterinhas
+                .MaxAsync(c => (int?)c.NumeroCarterinha, ct);
+            return (maiorNumero ?? 0) + 1;
         }
     }
 }
