@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using api.Dtos.Flanelinha;
 using api.Models;
 
@@ -9,27 +5,29 @@ namespace api.Mappers
 {
     public static class FlanelinhaMappers
     {
-        public static Flanelinha ToFlanelinhaDto(this Flanelinha flanelinhaModel)
+        public static FlanelinhaDto ToFlanelinhaDto(this Flanelinha flanelinhaModel)
         {
-            return new Flanelinha
+            return new FlanelinhaDto
             {
                 IdFlanel = flanelinhaModel.IdFlanel,
                 Nome = flanelinhaModel.Nome,
+                Email = flanelinhaModel.Email,
                 Cpf = flanelinhaModel.Cpf,
                 PontoAtuacao = flanelinhaModel.PontoAtuacao,
                 Telefone = flanelinhaModel.Telefone,
                 Ativo = flanelinhaModel.Ativo,
                 DataCadastro = flanelinhaModel.DataCadastro,
                 IdFiscal = flanelinhaModel.IdFiscal,
-                Carterinhas = flanelinhaModel.Carterinhas
+                Carterinhas = flanelinhaModel.Carterinhas.Select(c => c.ToCarterinhaDto()).ToList()
             };
         }
-       
+
         public static Flanelinha ToCreateFlanelinhaDto(this CreateFlanelinhaDto flanelinhaDto)
         {
             return new Flanelinha
             {
                 Nome = flanelinhaDto.Nome,
+                Email = flanelinhaDto.Email,
                 Cpf = flanelinhaDto.Cpf,
                 PontoAtuacao = flanelinhaDto.PontoAtuacao,
                 Telefone = flanelinhaDto.Telefone,
@@ -37,6 +35,19 @@ namespace api.Mappers
                 Senha = flanelinhaDto.Senha,
                 DataCadastro = DateTime.UtcNow,
                 IdFiscal = flanelinhaDto.IdFiscal
+            };
+        }
+
+        public static CarterinhaDto ToCarterinhaDto(this Carterinha carterinhaModel)
+        {
+            return new CarterinhaDto
+            {
+                IdCarterinha = carterinhaModel.IdCarterinha,
+                NumeroCarterinha = carterinhaModel.NumeroCarterinha,
+                DataEmissao = carterinhaModel.DataEmissao,
+                DataValidade = carterinhaModel.DataValidade,
+                Ativo = carterinhaModel.Ativo,
+                Tipo = carterinhaModel.Tipo
             };
         }
     }
