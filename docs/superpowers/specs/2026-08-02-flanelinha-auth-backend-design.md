@@ -19,9 +19,9 @@ specs separadas.
    primeiro; se não encontrar, busca em `Flanelinha`.
 3. **Escopo da autenticação**: além de emitir o token, esta spec também protege com `[Authorize]`
    todos os endpoints existentes de `FiscalController`/`FlanelinhaController`.
-4. **`POST/GET /api/fiscal`**: não têm tela associada no app (não existe cadastro de Fiscal via
-   mobile). Ficam protegidos apenas com `[Authorize(Roles = "Fiscal")]` genérico (qualquer Fiscal
-   autenticado), sem verificação de dono — uso administrativo via Scalar/Postman.
+4. **`POST/GET/DELETE /api/fiscal`**: não têm tela associada no app (não existe cadastro/remoção de
+   Fiscal via mobile). Ficam protegidos apenas com `[Authorize(Roles = "Fiscal")]` genérico
+   (qualquer Fiscal autenticado), sem verificação de dono — uso administrativo via Scalar/Postman.
 5. **Sem testes automatizados**: o projeto não tem projeto de testes hoje (nem para os
    controllers existentes). Verificação desta spec é manual via Scalar, seguindo a convenção atual.
 
@@ -87,8 +87,11 @@ Task<Flanelinha?> GetByCpfAsync(string cpf, CancellationToken ct = default);
 
 ## 2. Geração e configuração do JWT
 
-Novo `Security/JwtTokenGenerator.cs` (ou similar), responsável por criar o token a partir de
-`(id, role, nome)`. Claims:
+Novo `Security/JwtTokenGenerator.cs`, registrado via DI (`builder.Services.AddSingleton<JwtTokenGenerator>()`,
+já que não tem estado por requisição), recebendo `Jwt:Key`/`Issuer`/`Audience`/`ExpiresInMinutes`
+via `IConfiguration` injetado no construtor (mesmo padrão dos repositórios, diferente de
+`PasswordHasher`, que é estático por não depender de configuração). Método
+`string GenerateToken(int id, string role, string nome)`. Claims:
 
 - `ClaimTypes.NameIdentifier` = id (`IdFiscal` ou `IdFlanel`) como string.
 - `ClaimTypes.Role` = `"Fiscal"` ou `"Flanelinha"`.
@@ -112,7 +115,10 @@ variável de ambiente/secret manager (fora do escopo desta spec — só a leitur
 Expiração: 8 horas, sem refresh token. Token expirado → app volta para a tela de login (tratado no
 frontend, fora do escopo desta spec de backend).
 
-Pacote novo: `Microsoft.AspNetCore.Authentication.JwtBearer` (versão compatível com `net9.0`).
+Pacote novo: `Microsoft.AspNetCore.Authentication.JwtBearer` (versão compatível com `net9.0`). Como
+`api.csproj` usa o SDK `Microsoft.NET.Sdk.Web`, esse pacote já faz parte do shared framework —
+adicioná-lo explicitamente como `PackageReference` deve gerar um aviso `SDK1080` ("implicitly
+referenced by the .NET SDK"), não um erro; é seguro ignorar esse aviso específico.
 
 `Program.cs` ganha:
 
