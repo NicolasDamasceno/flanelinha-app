@@ -13,10 +13,10 @@ namespace api.Models
         public string Nome {get; set;} = string.Empty;
         public string Cpf {get; set;} = string.Empty;
         public string PontoAtuacao {get; set;} = string.Empty;
-        public int Telefone {get; set;}
+        public string Telefone {get; set;} = string.Empty;
         public bool PrimeiroAcesso {get; set;} = true;
-        public bool Ativo {get; set;} = false;
-        public string Senha {get; set;} = string.Empty;
+        public bool Ativo {get; set;} = true;
+        public string Senha {get; set;} = "Senha123";
         public DateTime DataCadastro {get; set;} = DateTime.UtcNow;
         public int? IdFiscal {get; set;}
         public List<Carterinha> Carterinhas {get; set;} = new List<Carterinha>();
