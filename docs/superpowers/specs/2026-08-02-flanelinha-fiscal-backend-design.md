@@ -62,11 +62,18 @@ Task<bool> SaveChangesAsync(CancellationToken ct = default);
 `IFlanelinhaRepository` adiciona:
 
 ```csharp
+Task<List<Flanelinha>> GetAllWithCarterinhasAsync(CancellationToken ct = default);
 Task<Flanelinha?> GetByIdWithCarterinhasAsync(int id, CancellationToken ct = default);
 Task<Carterinha?> GetCarterinhaAtivaAsync(int idFlanel, CancellationToken ct = default);
 Task AddCarterinhaAsync(Carterinha carterinha, CancellationToken ct = default);
 Task<int> GetProximoNumeroCarterinhaAsync(CancellationToken ct = default);
 ```
+
+A base `IRepository<T>.GetAllAsync`/`GetByIdAsync` **não** fazem `.Include(Carterinhas)` (não há
+pacote de lazy-loading proxies no `api.csproj`, e não seria apropriado adicionar um agora). Como
+`FlanelinhaController.GetAll`/`GetById` precisam popular `FlanelinhaDto.Carterinhas`, eles usam
+`GetAllWithCarterinhasAsync`/`GetByIdWithCarterinhasAsync` (com `.Include(f => f.Carterinhas)`),
+**não** os métodos genéricos da base — do contrário `Carterinhas` viria sempre `[]` na resposta.
 
 `IFiscalRepository` não adiciona métodos além da base (por ora).
 
@@ -81,12 +88,32 @@ Namespaces seguem a convenção existente (`Dtos/Flanelinha`, `Dtos/Fiscal`).
 - `ChangePasswordDto { string? SenhaAtual; string NovaSenha; }`
   - Flanelinha: `SenhaAtual` é ignorado/opcional quando `flanelinha.PrimeiroAcesso == true`.
   - Fiscal: `SenhaAtual` é sempre obrigatório.
-- `RequestCarteiraDto { string? Motivo; }` (namespace `Dtos/Flanelinha`).
+- `RequestCarteiraDto { }` — corpo vazio por enquanto (nenhum campo de entrada é necessário: o
+  servidor decide `Tipo` e `NumeroCarterinha`). Existe como tipo dedicado para não expor a
+  entidade `Carterinha` e para dar espaço a campos futuros (ex.: motivo), mas não inventamos campos
+  não utilizados agora.
 - `CarterinhaDto { int IdCarterinha; int NumeroCarterinha; DateTime DataEmissao; DateTime DataValidade; bool Ativo; TipoCarterinha Tipo; }`
   (namespace `Dtos/Flanelinha`, usado tanto na resposta do novo endpoint quanto substituindo
   `List<Carterinha>` em `FlanelinhaDto.Carterinhas`).
 
-`FlanelinhaDto` e `FiscalDto` continuam sem o campo `Senha` (já era assim).
+**Correções necessárias em DTOs/mappers existentes (achadas na revisão da spec):**
+
+- `CreateFlanelinhaDto` e `FlanelinhaDto` não têm campo `Email` — precisam ganhar
+  `string Email {get; set;}` para ter paridade com o Fiscal (que já tem `Email` ponta a ponta).
+- `FlanelinhaDto.Telefone` está tipado como `int`, mas `Flanelinha.Telefone` é `string` (desde a
+  migration `FlanelinhaTelefone`). Corrigir `FlanelinhaDto.Telefone` para `string`.
+- `FlanelinhaMappers.ToFlanelinhaDto` hoje tem assinatura `Flanelinha ToFlanelinhaDto(this Flanelinha)`
+  — ou seja, apesar do nome, devolve outra instância de `Flanelinha` (não um `FlanelinhaDto`), e
+  por isso nunca é usado para remover o `Senha` da resposta. Ele será corrigido para
+  `FlanelinhaDto ToFlanelinhaDto(this Flanelinha flanelinhaModel)`, mapeando para o DTO de fato
+  (incluindo `Email`, `Telefone` como `string`, e `Carterinhas` como `List<CarterinhaDto>` via
+  `.Select(c => c.ToCarterinhaDto()).ToList()`).
+- `FlanelinhaController.GetAll`/`GetById` (hoje retornam `Flanelinha` cru) e `FiscalController.GetAll`/
+  `GetById` (já retornam `Fiscal` cru) passam a mapear para `FlanelinhaDto`/`FiscalDto` antes de
+  retornar, fechando o vazamento do campo `Senha` no JSON de resposta.
+- `ToCarterinhaDto()` (usado acima) é um novo método de extensão `CarterinhaDto ToCarterinhaDto(this Carterinha carterinhaModel)`,
+  definido em `Mappers/FlanelinhaMappers.cs` (não há um `CarterinhaMappers.cs` separado — a
+  entidade `Carterinha` só é exposta a partir do fluxo de Flanelinha, então fica no mesmo arquivo).
 
 ## 4. Endpoints
 
@@ -102,6 +129,7 @@ Endpoints existentes (`GetAll`, `GetById`, `Create`, `Delete` em ambos os contro
 em `FiscalController`) são refatorados para usar os repositórios de forma assíncrona e retornar
 DTOs. O `Update` genérico de `FiscalController` (que tinha o bug de não salvar) é removido/
 substituído pelos dois endpoints dedicados (`perfil` e `senha`), conforme pedido pela tarefa.
+`UpdateFiscalDto` fica órfão nessa troca e é removido junto (`Dtos/Fiscal/UpdateFiscalDto.cs`).
 
 ## 5. Hash de senha
 
@@ -111,21 +139,38 @@ substituído pelos dois endpoints dedicados (`perfil` e `senha`), conforme pedid
 - Endpoints de senha: verificam com `BCrypt.Net.BCrypt.Verify(senhaAtual, entity.Senha)` quando
   aplicável, e gravam `BCrypt.Net.BCrypt.HashPassword(dto.NovaSenha)`.
 - Ao trocar a senha do Flanelinha com sucesso, `PrimeiroAcesso` é definido como `false`.
+- **Registros legados em texto puro (achado na revisão da spec):** `BCrypt.Verify` lança
+  `SaltParseException` se `entity.Senha` não for um hash bcrypt válido (o caso de qualquer registro
+  gravado antes desta mudança). A verificação de `SenhaAtual` deve envolver a chamada a `Verify`
+  em um helper que capture essa exceção e trate como "senha não confere" (→ `400 BadRequest`), em
+  vez de deixar a exceção propagar como erro 500. Isso é necessário tanto para Flanelinha quanto
+  para Fiscal, já que ambos podem ter registros pré-existentes em texto puro.
 
 ## 6. Regra de negócio: nova carteira
 
 `POST /api/flanelinha/{id}/carteiras`:
 
-1. Busca o Flanelinha por `id` — `404 NotFound` se não existir.
-2. Busca a carteira ativa atual (`Ativo == true`) via `GetCarterinhaAtivaAsync`.
-3. Se existir e `DataValidade > DateTime.UtcNow` → `400 BadRequest` ("carteira ainda válida").
+1. Busca o Flanelinha por `id` usando `GetByIdWithCarterinhasAsync` (inclui todo o histórico de
+   carterinhas, necessário para decidir `Tipo` no passo 4) — `404 NotFound` se não existir.
+2. A partir da lista já carregada, seleciona a carteira ativa atual: `Carterinhas.Where(c => c.Ativo).OrderByDescending(c => c.DataEmissao).FirstOrDefault()`.
+   (`GetCarterinhaAtivaAsync` no repositório implementa essa mesma query diretamente no banco,
+   para uso fora deste fluxo; aqui reaproveitamos a lista já carregada para evitar um round-trip
+   extra.) Invariante do sistema: no máximo uma carteira `Ativo == true` por Flanelinha a qualquer
+   momento — garantida porque este é o único fluxo que cria carterinhas, e ele sempre desativa a
+   anterior antes de ativar a nova. `OrderByDescending(DataEmissao).FirstOrDefault()` é uma
+   salvaguarda, não o mecanismo principal.
+3. Se existir carteira ativa e `DataValidade > DateTime.UtcNow` → `400 BadRequest` ("carteira
+   ainda válida"). Vencimento exatamente igual a `DateTime.UtcNow` (empate) conta como vencida
+   (permite emissão) — a condição de bloqueio é estritamente `DataValidade > UtcNow`.
 4. Caso contrário:
    - Se existir uma carteira ativa vencida, marca `Ativo = false` nela.
-   - Calcula `NumeroCarterinha` = `GetProximoNumeroCarterinhaAsync()` (máximo atual + 1, ou 1 se
-     não houver nenhuma).
-   - `Tipo` = `PrimeiraVia` se o Flanelinha nunca teve nenhuma carteira, senão `SegundaVia`.
-   - Cria nova `Carterinha` com `DataEmissao = UtcNow`, `DataValidade = UtcNow.AddYears(1)`,
-     `Ativo = true`.
+   - Calcula `NumeroCarterinha` = `GetProximoNumeroCarterinhaAsync()` (máximo atual + 1 entre
+     *todas* as carterinhas do sistema, ou 1 se não houver nenhuma — numeração global, não por
+     Flanelinha).
+   - `Tipo` = `PrimeiraVia` se `Carterinhas.Count == 0` (Flanelinha nunca teve nenhuma carteira,
+     ativa ou não), senão `SegundaVia`.
+   - Cria nova `Carterinha` com `IdFlanel = id`, `DataEmissao = UtcNow`,
+     `DataValidade = UtcNow.AddYears(1)`, `Ativo = true`, persistida via `AddCarterinhaAsync`.
 5. Retorna `201 Created` com `CarterinhaDto` da nova carteira.
 
 ## 7. Wiring (Program.cs)
