@@ -11,6 +11,7 @@ namespace api.Models
         [Key]
         public int IdFlanel {get; set;}
         public string Nome {get; set;} = string.Empty;
+        public string Email {get; set;} = string.Empty;
         public string Cpf {get; set;} = string.Empty;
         public string PontoAtuacao {get; set;} = string.Empty;
         public string Telefone {get; set;} = string.Empty;
