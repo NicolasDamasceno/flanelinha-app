@@ -1,12 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using api.Data;
 using api.Dtos.Fiscal;
+using api.Interfaces;
 using api.Mappers;
+using api.Security;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace api.Controllers
 {
@@ -14,74 +10,97 @@ namespace api.Controllers
     [ApiController]
     public class FiscalController : ControllerBase
     {
-        private readonly ApplicationDBContext _context;
+        private readonly IFiscalRepository _fiscalRepository;
 
-        public FiscalController(ApplicationDBContext context)
+        public FiscalController(IFiscalRepository fiscalRepository)
         {
-            _context = context;
+            _fiscalRepository = fiscalRepository;
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll(CancellationToken ct)
         {
-            var fiscals = _context.Fiscals.ToList();
-
-            return Ok(fiscals);
+            var fiscals = await _fiscalRepository.GetAllAsync(ct);
+            return Ok(fiscals.Select(f => f.ToFiscalDto()));
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id, CancellationToken ct)
         {
-            var fiscal = _context.Fiscals.FirstOrDefault(f => f.IdFiscal == id);
+            var fiscal = await _fiscalRepository.GetByIdAsync(id, ct);
 
             if (fiscal == null)
             {
                 return NotFound();
             }
-
-            return Ok(fiscal);
-        }
-
-        [HttpPost]
-        public IActionResult Create([FromBody] CreateFiscalDto fiscalDto)
-        {
-            var fiscal = fiscalDto.ToCreateFiscalDto();
-            _context.Fiscals.Add(fiscal);
-            _context.SaveChanges();
-
-            return CreatedAtAction(nameof(GetById), new { id = fiscal.IdFiscal }, fiscal.ToFiscalDto());
-        }
-
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] UpdateFiscalDto UpdateFiscalDto)
-        {
-            var fiscal = _context.Fiscals.FirstOrDefault(f => f.IdFiscal == id);
-
-            if (fiscal == null)
-            {
-                return NotFound();
-            }
-
-            fiscal.Nome = UpdateFiscalDto.Nome;
-            fiscal.Cpf = UpdateFiscalDto.Cpf;
-            fiscal.Email = UpdateFiscalDto.Email;
-            fiscal.Senha = UpdateFiscalDto.Senha;
 
             return Ok(fiscal.ToFiscalDto());
         }
 
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateFiscalDto fiscalDto, CancellationToken ct)
         {
-            var fiscal = _context.Fiscals.FirstOrDefault(f => f.IdFiscal == id);
+            var fiscal = fiscalDto.ToCreateFiscalDto();
+            fiscal.Senha = PasswordHasher.Hash(fiscal.Senha);
+
+            await _fiscalRepository.AddAsync(fiscal, ct);
+            await _fiscalRepository.SaveChangesAsync(ct);
+
+            return CreatedAtAction(nameof(GetById), new { id = fiscal.IdFiscal }, fiscal.ToFiscalDto());
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id, CancellationToken ct)
+        {
+            var fiscal = await _fiscalRepository.GetByIdAsync(id, ct);
 
             if (fiscal == null)
             {
                 return NotFound();
             }
 
-            _context.Fiscals.Remove(fiscal);
-            _context.SaveChanges();
+            _fiscalRepository.Delete(fiscal);
+            await _fiscalRepository.SaveChangesAsync(ct);
+
+            return NoContent();
+        }
+
+        [HttpPut("{id}/perfil")]
+        public async Task<IActionResult> UpdatePerfil(int id, [FromBody] UpdatePerfilDto perfilDto, CancellationToken ct)
+        {
+            var fiscal = await _fiscalRepository.GetByIdAsync(id, ct);
+
+            if (fiscal == null)
+            {
+                return NotFound();
+            }
+
+            fiscal.Nome = perfilDto.Nome;
+            fiscal.Email = perfilDto.Email;
+
+            await _fiscalRepository.SaveChangesAsync(ct);
+
+            return Ok(fiscal.ToFiscalDto());
+        }
+
+        [HttpPut("{id}/senha")]
+        public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordDto senhaDto, CancellationToken ct)
+        {
+            var fiscal = await _fiscalRepository.GetByIdAsync(id, ct);
+
+            if (fiscal == null)
+            {
+                return NotFound();
+            }
+
+            if (string.IsNullOrEmpty(senhaDto.SenhaAtual) || !PasswordHasher.Verify(senhaDto.SenhaAtual, fiscal.Senha))
+            {
+                return BadRequest("Senha atual inválida.");
+            }
+
+            fiscal.Senha = PasswordHasher.Hash(senhaDto.NovaSenha);
+
+            await _fiscalRepository.SaveChangesAsync(ct);
 
             return NoContent();
         }
