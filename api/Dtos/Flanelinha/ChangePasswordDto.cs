@@ -7,6 +7,7 @@ namespace api.Dtos.Flanelinha
         public string? SenhaAtual { get; set; }
 
         [Required]
+        [MinLength(6)]
         public string NovaSenha { get; set; } = string.Empty;
     }
 }
