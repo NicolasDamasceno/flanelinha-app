@@ -10,6 +10,9 @@ namespace api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql(
+                "UPDATE \"Carterinhas\" SET \"IdFlanel\" = \"FlanelinhaIdFlanel\" WHERE \"IdFlanel\" IS NULL AND \"FlanelinhaIdFlanel\" IS NOT NULL;");
+
             migrationBuilder.DropForeignKey(
                 name: "FK_Carterinhas_Flanelinhas_FlanelinhaIdFlanel",
                 table: "Carterinhas");
