@@ -841,7 +841,7 @@ namespace api.Controllers
                 return Forbid();
             }
 
-            var flanelinha = await _flanelinhaRepository.GetByIdAsync(id, ct);
+            var flanelinha = await _flanelinhaRepository.GetByIdWithCarterinhasAsync(id, ct);
 
             if (flanelinha == null)
             {
@@ -1129,18 +1129,29 @@ Expected: console shows `Now listening on: https://localhost:<port>`. Leave runn
 
 - [ ] **Step 4: Smoke test — login as Fiscal**
 
-Using an existing Fiscal's CPF/senha (create one first via `POST /api/fiscal` if none exist — this endpoint is now protected, so for this one bootstrap call you'll need a token; if no Fiscal exists yet at all, temporarily comment out `[Authorize(Roles = "Fiscal")]` on `FiscalController`, create the first Fiscal, then restore the attribute and rebuild — this bootstrap problem is expected for a brand-new system and out of scope to solve generally in this plan):
+`POST /api/fiscal` is now protected, so bootstrapping the first Fiscal on a brand-new database needs a one-time workaround: temporarily comment out `[Authorize(Roles = "Fiscal")]` on the `FiscalController` class, `dotnet build`, `dotnet run`, create the first Fiscal below, then stop the server, restore the attribute, and `dotnet build`/`dotnet run` again before continuing. Skip this whole workaround if a Fiscal already exists in the local database.
 
 ```
-curl -X POST https://localhost:<port>/api/auth/login -H "Content-Type: application/json" -d "{\"cpf\":\"<cpf-do-fiscal>\",\"senha\":\"<senha>\"}" -k
+curl -X POST https://localhost:<port>/api/fiscal -H "Content-Type: application/json" -d "{\"nome\":\"Fiscal Teste\",\"cpf\":\"11111111111\",\"email\":\"fiscal@teste.com\",\"senha\":\"SenhaFiscal123\"}" -k
+```
+Expected: `201 Created` with a `FiscalDto` body.
+
+```
+curl -X POST https://localhost:<port>/api/auth/login -H "Content-Type: application/json" -d "{\"cpf\":\"11111111111\",\"senha\":\"SenhaFiscal123\"}" -k
 ```
 Expected: `200 OK`, body has `tipoPerfil: "Fiscal"`, `primeiroAcesso: false`, a non-empty `token`, and `perfil` with the Fiscal's data (no `senha` field). Copy the `token` value for the next steps.
 
 - [ ] **Step 5: Smoke test — login as Flanelinha**
 
-Using an existing Flanelinha's CPF/senha (create one via `POST /api/flanelinha` using the Fiscal's token from Step 4):
+Create a Flanelinha using the Fiscal's token from Step 4 (this endpoint is protected — no workaround needed here, unlike Step 4):
+
 ```
-curl -X POST https://localhost:<port>/api/auth/login -H "Content-Type: application/json" -d "{\"cpf\":\"<cpf-do-flanelinha>\",\"senha\":\"<senha>\"}" -k
+curl -X POST https://localhost:<port>/api/flanelinha -H "Authorization: Bearer <token-do-fiscal>" -H "Content-Type: application/json" -d "{\"nome\":\"Flanelinha Teste\",\"email\":\"flanelinha@teste.com\",\"cpf\":\"22222222222\",\"pontoAtuacao\":\"Praca Central\",\"telefone\":\"86999999999\",\"ativo\":true,\"senha\":\"SenhaFlanel123\"}" -k
+```
+Expected: `201 Created` with a `FlanelinhaDto` body whose `idFiscal` matches the Fiscal from Step 4 (not whatever might have been sent in the request — there's no `idFiscal` field to send anymore per Task 8).
+
+```
+curl -X POST https://localhost:<port>/api/auth/login -H "Content-Type: application/json" -d "{\"cpf\":\"22222222222\",\"senha\":\"SenhaFlanel123\"}" -k
 ```
 Expected: `200 OK`, `tipoPerfil: "Flanelinha"`, `primeiroAcesso: true` (for a freshly created Flanelinha).
 
