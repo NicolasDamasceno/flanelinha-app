@@ -70,7 +70,7 @@ namespace api.Controllers
         [HttpPut("{id}/perfil")]
         public async Task<IActionResult> UpdatePerfil(int id, [FromBody] UpdatePerfilDto perfilDto, CancellationToken ct)
         {
-            var flanelinha = await _flanelinhaRepository.GetByIdAsync(id, ct);
+            var flanelinha = await _flanelinhaRepository.GetByIdWithCarterinhasAsync(id, ct);
 
             if (flanelinha == null)
             {
@@ -112,7 +112,7 @@ namespace api.Controllers
         }
 
         [HttpPost("{id}/carteiras")]
-        public async Task<IActionResult> RequestCarteira(int id, [FromBody] RequestCarteiraDto _, CancellationToken ct)
+        public async Task<IActionResult> RequestCarteira(int id, [FromBody] RequestCarteiraDto? dto, CancellationToken ct)
         {
             var flanelinha = await _flanelinhaRepository.GetByIdWithCarterinhasAsync(id, ct);
 

@@ -24,7 +24,8 @@ namespace api.Data
             modelBuilder.Entity<Flanelinha>()
                 .HasMany(f => f.Carterinhas)
                 .WithOne()
-                .HasForeignKey(c => c.IdFlanel);
+                .HasForeignKey(c => c.IdFlanel)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Carterinha>()
                 .HasIndex(c => c.NumeroCarterinha)
