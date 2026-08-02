@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -13,7 +14,11 @@ namespace api.Dtos.Flanelinha
         public string PontoAtuacao { get; set; } = string.Empty;
         public string Telefone { get; set; } = string.Empty;
         public bool Ativo { get; set; } = true;
+
+        [Required]
+        [MinLength(6)]
         public string Senha { get; set; } = "Senha123";
+
         public int? IdFiscal { get; set; }
     }
 }

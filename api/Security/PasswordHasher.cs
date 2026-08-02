@@ -13,9 +13,9 @@ namespace api.Security
             {
                 return BCrypt.Net.BCrypt.Verify(senha, hash);
             }
-            catch (BCrypt.Net.SaltParseException)
+            catch
             {
-                // Registro legado gravado em texto puro antes da adoção de hash — trata como senha inválida.
+                // Hash armazenado é inválido/legado (texto puro, vazio, nulo, malformado) — trata como senha não confere.
                 return false;
             }
         }
