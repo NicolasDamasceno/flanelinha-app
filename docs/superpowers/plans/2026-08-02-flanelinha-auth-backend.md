@@ -30,7 +30,7 @@ Expected: `api.csproj` gains a `<PackageReference Include="Microsoft.AspNetCore.
 
 - [ ] **Step 2: Add the `Jwt` config section**
 
-In `api/appsettings.json`, add a `Jwt` section as a sibling of `ConnectionStrings` (this repo already commits dev-only secrets directly in `appsettings.json`, e.g. the Postgres password — the JWT signing key follows the same existing convention, per the spec's "Fora de escopo" on production secret management):
+In `api/appsettings.json`, add a `Jwt` section as a sibling of `ConnectionStrings` (this repo already commits dev-only secrets directly in `appsettings.json`, e.g. the Postgres password — the JWT signing key follows the same existing convention, per the spec's "Fora de escopo" on production secret management). Note: this deliberately deviates from the spec's literal wording, which puts the dev key in `appsettings.Development.json` — putting it in the base file instead matches how `ConnectionStrings` is already handled here, and `appsettings.Development.json` doesn't need to override anything since there's no separate prod value yet:
 
 ```json
 {
@@ -332,14 +332,8 @@ namespace api.Repositories
 
         public async Task<int> GetProximoNumeroCarterinhaAsync(CancellationToken ct = default)
         {
-            var existeAlguma = await _context.Carterinhas.AnyAsync(ct);
-            if (!existeAlguma)
-            {
-                return 1;
-            }
-
-            var maiorNumero = await _context.Carterinhas.MaxAsync(c => c.NumeroCarterinha, ct);
-            return maiorNumero + 1;
+            var maiorNumero = await _context.Carterinhas.MaxAsync(c => (int?)c.NumeroCarterinha, ct);
+            return (maiorNumero ?? 0) + 1;
         }
     }
 }
@@ -653,14 +647,8 @@ namespace api.Repositories
 
         public async Task<int> GetProximoNumeroCarterinhaAsync(CancellationToken ct = default)
         {
-            var existeAlguma = await _context.Carterinhas.AnyAsync(ct);
-            if (!existeAlguma)
-            {
-                return 1;
-            }
-
-            var maiorNumero = await _context.Carterinhas.MaxAsync(c => c.NumeroCarterinha, ct);
-            return maiorNumero + 1;
+            var maiorNumero = await _context.Carterinhas.MaxAsync(c => (int?)c.NumeroCarterinha, ct);
+            return (maiorNumero ?? 0) + 1;
         }
     }
 }
