@@ -12,7 +12,7 @@
 
 ---
 
-## Chunk 1: Full implementation
+## Chunk 1: JWT infrastructure + login endpoint
 
 ### Task 1: JWT package + configuration
 
@@ -568,6 +568,8 @@ git commit -m "feat: add POST /api/auth/login endpoint"
 ```
 
 ---
+
+## Chunk 2: Protect existing endpoints
 
 ### Task 7: Swap `GetAllWithCarterinhasAsync` for a Fiscal-scoped version
 
