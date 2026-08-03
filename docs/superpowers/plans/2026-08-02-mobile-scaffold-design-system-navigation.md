@@ -10,7 +10,7 @@
 
 **Environment note (verified hands-on before writing this plan):** `expo-router@57.0.9`'s optional `@expo/ui` dependency pulls in web-only Radix UI packages with a peer-dependency conflict that breaks plain `npm install` for anything added afterward. Task 1 adds a `.npmrc` with `legacy-peer-deps=true` as the very first step specifically to avoid this — every subsequent install in this plan (and in later sub-projects) depends on that file already being there.
 
-**Testing approach:** No automated test framework (same decision as the backend sub-project — this is a learning project with no CI). Verification is `npx tsc --noEmit` (fast, per-task) for tasks that don't touch `app/` routes, and `npx expo export --platform android` (slower, but also regenerates Expo Router's typed-routes definitions so subsequent tasks' route references type-check correctly) for any task that adds or changes files under `mobile/app/`. The final task adds real manual testing against the running backend via Expo Go/emulator.
+**Testing approach:** No automated test framework (same decision as the backend sub-project — this is a learning project with no CI). Verification is `npx tsc --noEmit` for every task. For tasks that add or change files under `mobile/app/` (new routes), run `npx expo customize tsconfig.json` **first** — this is the only non-interactive, one-shot command confirmed (via two independent implementer runs, plus a direct check) to regenerate `.expo/types/router.d.ts`, the file `typedRoutes` type-checking depends on. **`npx expo export` does NOT regenerate this file** in the currently-installed `@expo/cli` version (57.0.11) — only `expo start`'s dev server does, and repeatedly starting/stopping a dev server just to refresh types is unnecessarily slow and fragile for a non-interactive task loop. `.expo/` is gitignored, so this file is always a local, regenerable artifact, never committed. Task 11 (the last code task) adds one real `npx expo export --platform android` as an end-to-end bundling sanity check; the final task (12) adds real manual testing against the running backend via Expo Go/emulator.
 
 ---
 
@@ -610,7 +610,19 @@ below rather than trying to avoid it.
 
 - [ ] **Step 2: Confirm the expected temporary type error**
 
-Run from `mobile/`:
+First, regenerate Expo Router's typed-routes definitions — `tsc` needs `.expo/types/router.d.ts`
+to exist and reflect the routes that currently exist on disk (just `/` and `/_sitemap` at this
+point) for the check below to mean anything; without it, `Href` isn't constrained and the expected
+error silently won't show. `.expo/` is gitignored, so this file may or may not already be present
+depending on what earlier tasks in this session did — don't assume either way, just regenerate it:
+```
+npx expo customize tsconfig.json
+```
+(This is the one-shot, non-interactive command confirmed to regenerate `.expo/types/router.d.ts`
+— it does NOT touch the `tsconfig.json` content already in place, despite the "Generating:
+tsconfig.json" message it prints.)
+
+Then run from `mobile/`:
 ```
 npx tsc --noEmit
 ```
@@ -618,7 +630,9 @@ Expected: **FAILS** with an error on the `router.replace({ pathname: "/login", .
 `AuthContext.tsx` (a `pathname` type-mismatch error, since no route at `/login` exists yet). This
 is expected — resolved in Task 9. Do not work around this by loosening the type (e.g. casting to
 `any`) — the whole point of `typedRoutes` is to catch typos in route paths, and this specific
-failure is a known, temporary gap the plan already accounts for.
+failure is a known, temporary gap the plan already accounts for. If `tsc` instead passes with no
+output, the types file wasn't actually regenerated — re-run the `expo customize` command above and
+confirm `mobile/.expo/types/router.d.ts` exists before re-checking.
 
 - [ ] **Step 3: Commit**
 
@@ -1028,11 +1042,13 @@ git commit -m "feat: add custom DrawerContent component"
 
 ## Chunk 3: Screens and navigation
 
-From this point on, tasks add or change files under `mobile/app/` — verification switches from
-`npx tsc --noEmit` to `npx expo export --platform android`, which also regenerates
-`.expo/types/router.d.ts` (the typed-routes definitions). Without this regeneration step, a task
-that both creates a new route *and* references it elsewhere in the same task could show a false
-`tsc` failure against the stale types snapshot from Task 1.
+From this point on, tasks add or change files under `mobile/app/`. Every verification step in this
+chunk runs `npx expo customize tsconfig.json` (regenerates `.expo/types/router.d.ts` to reflect
+whatever route files currently exist on disk) **before** `npx tsc --noEmit` — **not**
+`npx expo export`, which was found (verified independently in both Task 1 and Task 4) to *not*
+regenerate this file in the currently-installed `@expo/cli` version. Without the regeneration
+step, a task that both creates a new route *and* references it elsewhere in the same task could
+show a false `tsc` pass or fail against a stale types snapshot from an earlier task.
 
 ### Task 7: Fiscal Drawer and placeholder screens
 
@@ -1111,14 +1127,18 @@ export default function FiscalPerfilScreen() {
 
 Run from `mobile/`:
 ```
-npx expo export --platform android
+npx expo customize tsconfig.json
 ```
-Expected: ends with `Exported: dist`, no errors. This regenerates the route types, so the
-`router.replace(...)` (targeting `/login`) error from Task 4 will **still be present** (`/login` genuinely doesn't
-exist yet) — confirm the export output calls out that specific error and no others (`expo export`
-reports TypeScript errors inline if `tsc` would fail, but still completes the JS bundle since
-Metro itself doesn't type-check; if it reports *additional* errors beyond the known
-`/login` one, stop and fix them before continuing).
+(Regenerates `.expo/types/router.d.ts` to reflect the new `fiscal/*` routes just created — do NOT
+skip this, `tsc` alone won't know these routes exist otherwise.)
+
+Then:
+```
+npx tsc --noEmit
+```
+Expected: **still fails** with only the same `router.replace(...)` (targeting `/login`) error from
+Task 4 — no new errors (this task's own `fiscal/*` route references in `_layout.tsx`'s `items`
+array should now type-check cleanly, since those routes exist as of this task).
 
 - [ ] **Step 4: Commit**
 
@@ -1182,10 +1202,16 @@ export default function SolicitarCarteirinhaScreen() {
 
 Run from `mobile/`:
 ```
-npx expo export --platform android
+npx expo customize tsconfig.json
 ```
-Expected: same as Task 7 Step 3 — ends with `Exported: dist`, only the known
-`router.replace(...)` (targeting `/login`) error, nothing new.
+(Regenerates `.expo/types/router.d.ts` to reflect the new `flanelinha/*` routes.)
+
+Then:
+```
+npx tsc --noEmit
+```
+Expected: same as Task 7 Step 3 — only the known `router.replace(...)` (targeting `/login`) error
+from Task 4, nothing new.
 
 - [ ] **Step 4: Commit**
 
@@ -1288,13 +1314,19 @@ const styles = StyleSheet.create({
 
 Run from `mobile/`:
 ```
-npx expo export --platform android
+npx expo customize tsconfig.json
 ```
-Expected: the `router.replace(...)` (targeting `/login`) error from Task 4 (`AuthContext.tsx`) is now **gone** —
-`/login` exists as of this task. A **new**, equally expected error takes its place: this file's own
-`router.replace("/alterar-senha")` line, because `app/(auth)/alterar-senha.tsx` doesn't exist yet.
-Confirm the export output shows exactly this one error, on this file, nothing else — resolved in
-Task 10.
+(Regenerates `.expo/types/router.d.ts` to reflect the new `/login` route.)
+
+Then:
+```
+npx tsc --noEmit
+```
+Expected: the `router.replace(...)` (targeting `/login`) error from Task 4 (`AuthContext.tsx`) is
+now **gone** — `/login` exists as of this task. A **new**, equally expected error takes its place:
+this file's own `router.replace("/alterar-senha")` line, because `app/(auth)/alterar-senha.tsx`
+doesn't exist yet. Confirm `tsc` shows exactly this one error, on this file, nothing else —
+resolved in Task 10.
 
 - [ ] **Step 3: Commit**
 
@@ -1415,12 +1447,18 @@ reset UI state that no longer matters once navigation has already happened.
 
 Run from `mobile/`:
 ```
-npx expo export --platform android
+npx expo customize tsconfig.json
 ```
-Expected: ends with `Exported: dist`, **zero** TypeScript errors — this is the first task where
-the whole app should type-check cleanly end to end. If you still see an error mentioning `/login`
-or `/alterar-senha`, stop and check `logout`'s signature in `AuthContext.tsx` (Task 4) matches
-exactly what's shown there (`(params?: Record<string, string>) => Promise<void>`).
+(Regenerates `.expo/types/router.d.ts` to reflect the new `/alterar-senha` route.)
+
+Then:
+```
+npx tsc --noEmit
+```
+Expected: **zero** errors, no output — this is the first task where the whole app should
+type-check cleanly end to end. If you still see an error mentioning `/login` or `/alterar-senha`,
+stop and check `logout`'s signature in `AuthContext.tsx` (Task 4) matches exactly what's shown
+there (`(params?: Record<string, string>) => Promise<void>`).
 
 - [ ] **Step 3: Commit**
 
@@ -1500,9 +1538,23 @@ provider.
 
 Run from `mobile/`:
 ```
+npx expo customize tsconfig.json
+```
+(Regenerates `.expo/types/router.d.ts` — no new routes were added in this task, but this keeps the
+verification self-contained rather than relying on a previous task having left a fresh copy.)
+
+Then:
+```
+npx tsc --noEmit
+```
+Expected: zero errors, no output.
+
+Then, as a full end-to-end bundling sanity check (this is the first point where every screen in
+the app is wired together, not just individually type-checking):
+```
 npx expo export --platform android
 ```
-Expected: ends with `Exported: dist`, zero errors.
+Expected: ends with `Exported: dist`, no errors.
 
 Run:
 ```
