@@ -22,7 +22,10 @@ export default function LoginScreen() {
   async function handleSubmit() {
     setSuccessMessage(null);
 
-    if (!cpf.trim() || !senha.trim()) {
+    const cpfValue = cpf.trim();
+    const senhaValue = senha.trim();
+
+    if (!cpfValue || !senhaValue) {
       setErrorMessage("Preencha todos os campos");
       return;
     }
@@ -31,7 +34,7 @@ export default function LoginScreen() {
     setIsSubmitting(true);
 
     try {
-      const response = await login(cpf, senha);
+      const response = await login(cpfValue.replace(/\D/g, ""), senhaValue);
 
       if (response.tipoPerfil === "Flanelinha" && response.primeiroAcesso) {
         router.replace("/alterar-senha");
@@ -42,6 +45,9 @@ export default function LoginScreen() {
     } catch (error) {
       setErrorMessage(extractErrorMessage(error));
     } finally {
+      // Unlike Alterar Senha, login's most common outcome is the error path, which needs the
+      // reset — so resetting unconditionally here (even on the success path, briefly, before
+      // navigation completes) is the right call for this screen.
       setIsSubmitting(false);
     }
   }
@@ -53,8 +59,23 @@ export default function LoginScreen() {
       {errorMessage ? <Banner type="error" message={errorMessage} /> : null}
       {successMessage ? <Banner type="success" message={successMessage} /> : null}
 
-      <Input label="CPF" value={cpf} onChangeText={setCpf} keyboardType="numeric" />
-      <Input label="Senha" value={senha} onChangeText={setSenha} secureTextEntry />
+      <Input
+        label="CPF"
+        value={cpf}
+        onChangeText={setCpf}
+        keyboardType="number-pad"
+        maxLength={11}
+        textContentType="username"
+        autoComplete="username"
+      />
+      <Input
+        label="Senha"
+        value={senha}
+        onChangeText={setSenha}
+        secureTextEntry
+        textContentType="password"
+        autoComplete="password"
+      />
 
       <Button label="Entrar" onPress={handleSubmit} loading={isSubmitting} />
     </View>
