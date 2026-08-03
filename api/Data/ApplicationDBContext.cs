@@ -30,6 +30,14 @@ namespace api.Data
             modelBuilder.Entity<Carterinha>()
                 .HasIndex(c => c.NumeroCarterinha)
                 .IsUnique();
+
+            modelBuilder.Entity<Fiscal>()
+                .HasIndex(f => f.Cpf)
+                .IsUnique();
+
+            modelBuilder.Entity<Flanelinha>()
+                .HasIndex(f => f.Cpf)
+                .IsUnique();
         }
     }
 }
