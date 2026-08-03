@@ -13,6 +13,7 @@ export function Input({ label, error, style, ...rest }: InputProps) {
       <TextInput
         style={[styles.input, error ? styles.inputError : null, style]}
         placeholderTextColor={colors.textMuted}
+        accessibilityLabel={label}
         {...rest}
       />
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -28,7 +29,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 6,
-    color: "#1F2937",
+    color: colors.text,
   },
   input: {
     borderWidth: 1,
