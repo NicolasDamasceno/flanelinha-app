@@ -1420,6 +1420,7 @@ import { Banner } from "@/components/Banner";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { useAuth } from "@/context/AuthContext";
+import { colors } from "@/theme/colors";
 import type { FlanelinhaPerfil } from "@/types/auth";
 
 export default function AlterarSenhaScreen() {
@@ -1469,12 +1470,21 @@ export default function AlterarSenhaScreen() {
 
       {errorMessage ? <Banner type="error" message={errorMessage} /> : null}
 
-      <Input label="Nova Senha" value={novaSenha} onChangeText={setNovaSenha} secureTextEntry />
+      <Input
+        label="Nova Senha"
+        value={novaSenha}
+        onChangeText={setNovaSenha}
+        secureTextEntry
+        textContentType="newPassword"
+        autoComplete="new-password"
+      />
       <Input
         label="Confirmar Nova Senha"
         value={confirmarSenha}
         onChangeText={setConfirmarSenha}
         secureTextEntry
+        textContentType="newPassword"
+        autoComplete="new-password"
       />
 
       <Button label="Salvar" onPress={handleSubmit} loading={isSubmitting} />
@@ -1495,7 +1505,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.textMuted,
     marginBottom: 24,
   },
 });
