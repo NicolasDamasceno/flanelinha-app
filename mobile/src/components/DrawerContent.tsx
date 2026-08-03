@@ -1,4 +1,7 @@
 import { router, usePathname, type Href } from "expo-router";
+// Must import from expo-router/drawer, not @react-navigation/drawer directly — expo-router
+// vendors its own fork of the drawer navigator (SDK 56+) and rejects direct imports of the
+// npm package at bundle time. See https://github.com/expo/expo/issues/46161
 import { DrawerContentScrollView } from "expo-router/drawer";
 import { Pressable, StyleSheet, Text } from "react-native";
 import { useAuth } from "@/context/AuthContext";
