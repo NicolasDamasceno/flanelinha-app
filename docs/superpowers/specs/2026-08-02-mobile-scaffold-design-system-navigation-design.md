@@ -271,10 +271,12 @@ depende de qual mecanismo de validação disparou:
   com um campo `errors` (dicionário `{ [campo]: string[] }`).
 
 `src/api/client.ts` exporta uma função `extractErrorMessage(error: unknown): string` usada por
-todo lugar que precisa mostrar o erro num `Banner`: se `error.response.data` for uma string,
-retorna ela direto; se for um objeto com `errors`, pega a primeira mensagem do primeiro campo do
-dicionário; caso contrário (erro de rede, sem `response`), retorna a mensagem genérica de conexão
-descrita acima.
+todo lugar que precisa mostrar o erro num `Banner`: se `error.response.status >= 500`, retorna
+sempre a mensagem genérica de conexão descrita acima (em dev, um `500` não tratado do ASP.NET Core
+pode devolver uma página HTML de exceção como corpo — nunca deve ser mostrado direto no `Banner`);
+senão, se `error.response.data` for uma string, retorna ela direto; se for um objeto com `errors`,
+pega a primeira mensagem do primeiro campo do dicionário; caso contrário (erro de rede, sem
+`response`), também retorna a mensagem genérica de conexão.
 
 ## 6. Verificação
 
