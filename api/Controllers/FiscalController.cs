@@ -1,13 +1,16 @@
+using System.Security.Claims;
 using api.Dtos.Fiscal;
 using api.Interfaces;
 using api.Mappers;
 using api.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers
 {
     [Route("api/fiscal")]
     [ApiController]
+    [Authorize(Roles = "Fiscal")]
     public class FiscalController : ControllerBase
     {
         private readonly IFiscalRepository _fiscalRepository;
@@ -16,6 +19,8 @@ namespace api.Controllers
         {
             _fiscalRepository = fiscalRepository;
         }
+
+        private int AuthenticatedId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         [HttpGet]
         public async Task<IActionResult> GetAll(CancellationToken ct)
@@ -68,6 +73,11 @@ namespace api.Controllers
         [HttpPut("{id}/perfil")]
         public async Task<IActionResult> UpdatePerfil(int id, [FromBody] UpdatePerfilDto perfilDto, CancellationToken ct)
         {
+            if (id != AuthenticatedId)
+            {
+                return Forbid();
+            }
+
             var fiscal = await _fiscalRepository.GetByIdAsync(id, ct);
 
             if (fiscal == null)
@@ -86,6 +96,11 @@ namespace api.Controllers
         [HttpPut("{id}/senha")]
         public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordDto senhaDto, CancellationToken ct)
         {
+            if (id != AuthenticatedId)
+            {
+                return Forbid();
+            }
+
             var fiscal = await _fiscalRepository.GetByIdAsync(id, ct);
 
             if (fiscal == null)
