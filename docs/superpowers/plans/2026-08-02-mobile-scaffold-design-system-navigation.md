@@ -1521,20 +1521,30 @@ git commit -m "feat: wire AuthProvider and session-based redirect at app root"
 
 **Files:** none (verification only)
 
-Runs the full checklist from the spec's section 6. Uses `npx expo start --web` — the fastest way
-to manually exercise this sub-project's screens with no device/emulator setup required, and valid
-here because nothing in this sub-project uses a native-only module (no camera, no native storage
-UI) — everything used (`AsyncStorage`, the Drawer, the components) has a web implementation.
-Later sub-projects that add camera/QR code will need a real device or emulator; this one doesn't.
+Runs the full checklist from the spec's section 6. Uses Expo Go or an Android emulator — **not**
+`npx expo start --web`. This was corrected during plan review: the backend (`api/Program.cs`) has
+no CORS middleware configured at all, and a browser talking to a different-origin API sends a
+CORS preflight (`OPTIONS`) before every `POST`/`PUT` that axios makes here — with no
+`Access-Control-Allow-Origin` response, every single request in this checklist would be blocked by
+the browser, surfacing as `extractErrorMessage`'s generic connection-error banner instead of the
+specific outcomes below. This is exactly why the spec's "Fora de escopo" section rules out Expo
+Web for this app: native clients (Expo Go, an emulator) issue plain HTTP requests with no CORS
+enforcement at all, so this isn't a workaround — it's the only path that was ever in scope.
 
-- [ ] **Step 1: Set up `.env`**
+- [ ] **Step 1: Set up `.env` for your target**
 
 From `mobile/`:
 ```bash
 cp .env.example .env
 ```
-(PowerShell: `Copy-Item .env.example .env`). The default `EXPO_PUBLIC_API_URL=http://localhost:5093`
-from `.env.example` is correct as-is for `--web` (browser and API run on the same machine).
+(PowerShell: `Copy-Item .env.example .env`). Then edit `EXPO_PUBLIC_API_URL` in `.env` based on
+what you'll run against:
+- **Android emulator**: `http://10.0.2.2:5093` (the emulator's alias for the host machine's
+  `localhost` — `http://localhost:5093` from inside the emulator would point at the emulator
+  itself, not your machine).
+- **Physical device via Expo Go, same Wi-Fi as this machine**: `http://<LAN-IP-desta-máquina>:5093`
+  — find the IP with `ipconfig` (look for the `IPv4 Address` under your active network adapter,
+  e.g. `192.168.1.42`). `localhost`/`10.0.2.2` won't work from a separate physical device.
 
 - [ ] **Step 2: Start the backend**
 
@@ -1550,6 +1560,13 @@ sub-project) — if unsure, run `dotnet ef database update` from `api/` in anoth
 or no pending migrations either way means you're set.
 
 - [ ] **Step 3: Ensure test accounts exist**
+
+These `curl` commands run from this machine's own terminal against `localhost` (not from inside an
+emulator/device) — they're independent of whatever `EXPO_PUBLIC_API_URL` you set in Step 1. In
+PowerShell, `curl` only accepts the `-d "{\"key\":...}"` escaped-quote syntax shown below if it
+resolves to the real `curl.exe` and not PowerShell's `Invoke-WebRequest` alias — run `Get-Command
+curl` first to check; if it resolves to the alias, either use `curl.exe` explicitly or run these
+from Git Bash instead.
 
 If you don't already have a Fiscal and a first-access Flanelinha in your local database (e.g. from
 the auth backend sub-project's own manual verification), create them:
@@ -1577,9 +1594,19 @@ already changed its password once won't trigger the first-access flow this task 
 
 From `mobile/`:
 ```
-npx expo start --web
+npx expo start
 ```
-Expected: Metro bundles successfully and opens `http://localhost:8081` (or similar) in a browser.
+Expected: Metro bundles successfully and prints a QR code plus a menu of options. Then, depending
+on your target:
+- **Android emulator**: with an emulator already running (via Android Studio), press `a` in the
+  terminal running `expo start`. Expo installs Expo Go on the emulator automatically if needed and
+  opens the app.
+- **Physical device**: install the "Expo Go" app from the Play Store/App Store, then scan the
+  printed QR code with it (Android: Expo Go's built-in scanner; iOS: the system Camera app).
+
+If neither an emulator nor a physical device is available in your environment, this step (and the
+rest of this task) can't run — report that clearly rather than falling back to `--web`, which
+cannot exercise this checklist correctly (see the CORS explanation at the top of this task).
 
 - [ ] **Step 5: Walk through the checklist**
 
@@ -1587,13 +1614,14 @@ Expected: Metro bundles successfully and opens `http://localhost:8081` (or simil
 - Submit the login form with either field empty → red `Banner` "Preencha todos os campos", no
   network request made.
 - Log in with the Fiscal's CPF/senha (`11111111111` / `SenhaFiscal123`) → lands on
-  `/fiscal/home` (a "Início — Em construção" placeholder), and opening the Drawer (hamburger icon
-  top-left) shows 5 items: Início, Cadastrar Flanelinha, Visualizar Flanelinhas, Atualizar Dados,
-  Sair.
-- Tap "Sair" → back to Login. Refresh the browser tab → still on Login (no session persisted after
-  logout).
-- Log in with a wrong password for the Fiscal → red `Banner` "CPF ou senha inválidos", stays on
-  Login.
+  `/fiscal/home` (a "Início — Em construção" placeholder), and opening the Drawer (swipe from the
+  left edge, or tap the hamburger icon if the header is visible) shows 5 items: Início, Cadastrar
+  Flanelinha, Visualizar Flanelinhas, Atualizar Dados, Sair.
+- Tap "Sair" → back to Login. Force-close and reopen the app → still on Login (no session
+  persisted after logout).
+- Log in with a wrong password for the Fiscal → red `Banner` "CPF ou senha inválidos." (note the
+  trailing period — that's the literal text `AuthController.InvalidCredentialsMessage` returns),
+  stays on Login.
 - Log in with the Flanelinha's CPF/senha (`33333333333` / `SenhaFlanel123`, first access) → lands
   on the Alterar Senha screen, **not** `/flanelinha/home`.
 - On Alterar Senha, enter two different values in "Nova Senha"/"Confirmar Nova Senha" → red
@@ -1603,9 +1631,8 @@ Expected: Metro bundles successfully and opens `http://localhost:8081` (or simil
 - Log in again with the Flanelinha's CPF and the **new** password (`NovaSenha456`) → lands on
   `/flanelinha/home` directly (no more Alterar Senha — `primeiroAcesso` is now `false`). Opening
   the Drawer shows 3 items: Início, Solicitar Carteirinha Nova, Sair.
-- Refresh the browser tab while still logged in as the Flanelinha → still lands on
-  `/flanelinha/home` directly, without showing Login first (session persisted via `AsyncStorage`'s
-  web implementation, which is `localStorage` under `--web`).
+- Force-close and reopen the app while still logged in as the Flanelinha → still lands on
+  `/flanelinha/home` directly, without showing Login first (session persisted via `AsyncStorage`).
 - Tap "Sair" → back to Login.
 
 - [ ] **Step 6: `Modal` smoke check**
@@ -1616,9 +1643,9 @@ Expected: Metro bundles successfully and opens `http://localhost:8081` (or simil
 with a title, some text as `children`, and a "Fechar" `Button` as `actions` that sets `visible`
 back to `false`), reload, log in as the Fiscal, and confirm: tapping the button opens the modal
 centered over a dimmed background, showing the title/content/action button, and tapping "Fechar"
-(or the Android back gesture equivalent, `onRequestClose`) closes it. Once confirmed, **revert**
-`fiscal/home.tsx` back to the plain `PlaceholderScreen` from Task 7 — this was only a temporary
-smoke check, not a real feature.
+(or the Android hardware/gesture back action, `onRequestClose`) closes it. Once confirmed,
+**revert** `fiscal/home.tsx` back to the plain `PlaceholderScreen` from Task 7 — this was only a
+temporary smoke check, not a real feature.
 
 - [ ] **Step 7: Stop everything**
 
