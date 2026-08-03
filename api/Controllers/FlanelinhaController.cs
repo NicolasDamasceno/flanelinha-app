@@ -1,9 +1,11 @@
+using System.Security.Claims;
 using api.Dtos.Flanelinha;
 using api.Enums;
 using api.Interfaces;
 using api.Mappers;
 using api.Models;
 using api.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers
@@ -19,14 +21,18 @@ namespace api.Controllers
             _flanelinhaRepository = flanelinhaRepository;
         }
 
+        private int AuthenticatedId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
         [HttpGet]
+        [Authorize(Roles = "Fiscal")]
         public async Task<IActionResult> GetAll(CancellationToken ct)
         {
-            var flanelinhas = await _flanelinhaRepository.GetAllWithCarterinhasAsync(ct);
+            var flanelinhas = await _flanelinhaRepository.GetAllByFiscalWithCarterinhasAsync(AuthenticatedId, ct);
             return Ok(flanelinhas.Select(f => f.ToFlanelinhaDto()));
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "Fiscal")]
         public async Task<IActionResult> GetById(int id, CancellationToken ct)
         {
             var flanelinha = await _flanelinhaRepository.GetByIdWithCarterinhasAsync(id, ct);
@@ -36,14 +42,21 @@ namespace api.Controllers
                 return NotFound();
             }
 
+            if (flanelinha.IdFiscal != AuthenticatedId)
+            {
+                return Forbid();
+            }
+
             return Ok(flanelinha.ToFlanelinhaDto());
         }
 
         [HttpPost]
+        [Authorize(Roles = "Fiscal")]
         public async Task<IActionResult> Create([FromBody] CreateFlanelinhaDto flanelinhaDto, CancellationToken ct)
         {
             var flanelinha = flanelinhaDto.ToCreateFlanelinhaDto();
             flanelinha.Senha = PasswordHasher.Hash(flanelinha.Senha);
+            flanelinha.IdFiscal = AuthenticatedId;
 
             await _flanelinhaRepository.AddAsync(flanelinha, ct);
             await _flanelinhaRepository.SaveChangesAsync(ct);
@@ -52,6 +65,7 @@ namespace api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Fiscal")]
         public async Task<IActionResult> Delete(int id, CancellationToken ct)
         {
             var flanelinha = await _flanelinhaRepository.GetByIdAsync(id, ct);
@@ -61,6 +75,11 @@ namespace api.Controllers
                 return NotFound();
             }
 
+            if (flanelinha.IdFiscal != AuthenticatedId)
+            {
+                return Forbid();
+            }
+
             _flanelinhaRepository.Delete(flanelinha);
             await _flanelinhaRepository.SaveChangesAsync(ct);
 
@@ -68,8 +87,14 @@ namespace api.Controllers
         }
 
         [HttpPut("{id}/perfil")]
+        [Authorize(Roles = "Flanelinha")]
         public async Task<IActionResult> UpdatePerfil(int id, [FromBody] UpdatePerfilDto perfilDto, CancellationToken ct)
         {
+            if (id != AuthenticatedId)
+            {
+                return Forbid();
+            }
+
             var flanelinha = await _flanelinhaRepository.GetByIdWithCarterinhasAsync(id, ct);
 
             if (flanelinha == null)
@@ -86,8 +111,14 @@ namespace api.Controllers
         }
 
         [HttpPut("{id}/senha")]
+        [Authorize(Roles = "Flanelinha")]
         public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordDto senhaDto, CancellationToken ct)
         {
+            if (id != AuthenticatedId)
+            {
+                return Forbid();
+            }
+
             var flanelinha = await _flanelinhaRepository.GetByIdAsync(id, ct);
 
             if (flanelinha == null)
@@ -112,8 +143,14 @@ namespace api.Controllers
         }
 
         [HttpPost("{id}/carteiras")]
+        [Authorize(Roles = "Flanelinha")]
         public async Task<IActionResult> RequestCarteira(int id, [FromBody] RequestCarteiraDto? dto, CancellationToken ct)
         {
+            if (id != AuthenticatedId)
+            {
+                return Forbid();
+            }
+
             var flanelinha = await _flanelinhaRepository.GetByIdWithCarterinhasAsync(id, ct);
 
             if (flanelinha == null)
