@@ -881,6 +881,7 @@ construção" placeholder route files (`fiscal/home`, `fiscal/cadastrar-flanelin
 sharing one component avoids duplicating the same JSX six times:
 ```tsx
 import { StyleSheet, Text, View } from "react-native";
+import { colors } from "@/theme/colors";
 
 interface PlaceholderScreenProps {
   title: string;
@@ -909,7 +910,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: "#94A3B8",
+    color: colors.textMuted,
   },
 });
 ```
