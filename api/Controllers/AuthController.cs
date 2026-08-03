@@ -10,6 +10,13 @@ namespace api.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
+        private const string InvalidCredentialsMessage = "CPF ou senha inválidos.";
+
+        // Hash bcrypt válido (qualquer um serve — nunca confere com senha real) usado para
+        // manter o custo de verificação constante quando o CPF não é encontrado, evitando
+        // que o tempo de resposta revele se o CPF existe (side-channel de enumeração).
+        private const string DummyHash = "$2a$11$Rmrh3q5qwmfzkPXKUVsKC.qtEsm2YG85ujxey6cJpJUzThqD6xlo.";
+
         private readonly IFiscalRepository _fiscalRepository;
         private readonly IFlanelinhaRepository _flanelinhaRepository;
         private readonly JwtTokenGenerator _tokenGenerator;
@@ -32,7 +39,7 @@ namespace api.Controllers
             {
                 if (!PasswordHasher.Verify(dto.Senha, fiscal.Senha))
                 {
-                    return Unauthorized("CPF ou senha inválidos.");
+                    return Unauthorized(InvalidCredentialsMessage);
                 }
 
                 var token = _tokenGenerator.GenerateToken(fiscal.IdFiscal, "Fiscal", fiscal.Nome);
@@ -50,7 +57,7 @@ namespace api.Controllers
             {
                 if (!PasswordHasher.Verify(dto.Senha, flanelinha.Senha))
                 {
-                    return Unauthorized("CPF ou senha inválidos.");
+                    return Unauthorized(InvalidCredentialsMessage);
                 }
 
                 var token = _tokenGenerator.GenerateToken(flanelinha.IdFlanel, "Flanelinha", flanelinha.Nome);
@@ -63,7 +70,10 @@ namespace api.Controllers
                 });
             }
 
-            return Unauthorized("CPF ou senha inválidos.");
+            // Paga o custo do BCrypt mesmo quando o CPF não existe em nenhuma tabela, para que
+            // o tempo de resposta não sirva de sinal para enumerar CPFs válidos.
+            PasswordHasher.Verify(dto.Senha, DummyHash);
+            return Unauthorized(InvalidCredentialsMessage);
         }
     }
 }
