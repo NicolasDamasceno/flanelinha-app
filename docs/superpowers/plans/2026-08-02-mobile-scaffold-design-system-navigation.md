@@ -973,14 +973,16 @@ git commit -m "feat: add Button, Input, Banner, Modal, and PlaceholderScreen com
 
 - [ ] **Step 1: Custom drawer content**
 
-Create `mobile/src/components/DrawerContent.tsx`. Deliberately built with plain React Native
-components (not `DrawerContentScrollView`/`DrawerItem` from `@react-navigation/drawer`) — this
-avoids depending on that library's own prop-shape contract for custom drawer content, while still
-using `@react-navigation/drawer` (via `expo-router/drawer`, Task 7/8) for the actual Drawer
-navigator/gestures/animations, which is what it's installed for:
+Create `mobile/src/components/DrawerContent.tsx`. Built with plain `Pressable`/`Text` for
+individual items (not `DrawerItem` from `@react-navigation/drawer`) — this avoids depending on that
+component's own prop-shape contract for custom drawer content, while still using
+`DrawerContentScrollView` (from the same package) for the scroll container, since that part carries
+no such coupling and is the only thing providing safe-area inset padding (the Drawer navigator
+itself, via `expo-router/drawer` in Task 7/8, does not pad its `drawerContent` render output):
 ```tsx
-import { router, type Href } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { DrawerContentScrollView } from "@react-navigation/drawer";
+import { router, usePathname, type Href } from "expo-router";
+import { Pressable, StyleSheet, Text } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { colors } from "@/theme/colors";
 
@@ -995,23 +997,28 @@ interface DrawerContentProps {
 
 export function DrawerContent({ items }: DrawerContentProps) {
   const { logout } = useAuth();
+  const pathname = usePathname();
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {items.map((item) => (
-        <Pressable
-          key={item.route.toString()}
-          style={styles.item}
-          onPress={() => router.push(item.route)}
-          accessibilityRole="button"
-        >
-          <Text style={styles.itemLabel}>{item.label}</Text>
-        </Pressable>
-      ))}
+    <DrawerContentScrollView contentContainerStyle={styles.container}>
+      {items.map((item) => {
+        const isActive = pathname === item.route;
+        return (
+          <Pressable
+            key={item.label}
+            style={[styles.item, isActive && styles.itemActive]}
+            onPress={() => router.push(item.route)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: isActive }}
+          >
+            <Text style={styles.itemLabel}>{item.label}</Text>
+          </Pressable>
+        );
+      })}
       <Pressable style={styles.item} onPress={() => logout()} accessibilityRole="button">
         <Text style={[styles.itemLabel, styles.logoutLabel]}>Sair</Text>
       </Pressable>
-    </ScrollView>
+    </DrawerContentScrollView>
   );
 }
 
@@ -1022,6 +1029,11 @@ const styles = StyleSheet.create({
   },
   item: {
     paddingVertical: 14,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+  },
+  itemActive: {
+    backgroundColor: "#EFF6FF",
   },
   itemLabel: {
     fontSize: 16,
@@ -1033,6 +1045,11 @@ const styles = StyleSheet.create({
   },
 });
 ```
+
+`DrawerContentScrollView` takes plain `ScrollViewProps & { children }` — no drawer-item-specific
+prop shape — so using it doesn't reintroduce the coupling this file otherwise avoids. `usePathname()`
+compares against `item.route` as a plain string; every current and near-future caller (Task 7/8)
+only ever passes string `Href`s, so this comparison is meaningful today, not just forward-looking.
 
 `items` never includes a "Sair" entry — `DrawerContent` always renders it itself, as the last
 item, regardless of what's passed in (per the spec: Fiscal's 4 items + this = 5 total in its
