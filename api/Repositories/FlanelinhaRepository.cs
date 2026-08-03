@@ -16,9 +16,12 @@ namespace api.Repositories
             return await _dbSet.FirstOrDefaultAsync(f => f.Cpf == cpf, ct);
         }
 
-        public async Task<List<Flanelinha>> GetAllWithCarterinhasAsync(CancellationToken ct = default)
+        public async Task<List<Flanelinha>> GetAllByFiscalWithCarterinhasAsync(int idFiscal, CancellationToken ct = default)
         {
-            return await _dbSet.Include(f => f.Carterinhas).ToListAsync(ct);
+            return await _dbSet
+                .Include(f => f.Carterinhas)
+                .Where(f => f.IdFiscal == idFiscal)
+                .ToListAsync(ct);
         }
 
         public async Task<Flanelinha?> GetByIdWithCarterinhasAsync(int id, CancellationToken ct = default)
