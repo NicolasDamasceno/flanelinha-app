@@ -46,8 +46,14 @@ Pacotes adicionais, além do que o template já traz:
 - `expo-router` (se não vier pelo template)
 - `axios`
 - `@react-native-async-storage/async-storage`
-- `react-native-safe-area-context`, `react-native-screens` (dependências do Expo Router/React
-  Navigation — normalmente já vêm com o template)
+- `@react-navigation/drawer` — **necessário explicitamente**: `expo-router/drawer` (usado nos
+  layouts da seção 2) depende deste pacote, e ele **não** vem incluído no template
+  `blank-typescript` base — precisa ser instalado à parte.
+- `react-native-safe-area-context`, `react-native-screens`, `react-native-gesture-handler`,
+  `react-native-reanimated` (dependências do Expo Router/React Navigation/Drawer — normalmente já
+  vêm com o template ou são trazidas como peer dependencies do `@react-navigation/drawer`; conferir
+  com `npx expo install @react-navigation/drawer` para que o Expo resolva as versões compatíveis
+  automaticamente, em vez de `npm install` direto)
 
 `mobile/.env.example`:
 
@@ -135,7 +141,7 @@ export interface FlanelinhaPerfil {
   ativo: boolean;
   dataCadastro: string;
   idFiscal: number | null;
-  carterinhas: unknown[]; // sempre [] na resposta de login (ver spec do auth backend, Task 6)
+  carterinhas: unknown[]; // sempre [] na resposta de login (ver plano do auth backend, Task 6)
 }
 ```
 
@@ -159,7 +165,8 @@ export interface FlanelinhaPerfil {
      (seção 5), que desloga e redireciona para o login. Decodificar o JWT no cliente só para checar
      `exp` antecipadamente é uma otimização de UX, não uma necessidade — fica fora de escopo.
 
-**Login** (`(auth)/login.tsx`, chama `POST /api/auth/login`):
+**Login** (`(auth)/login.tsx`, chama `POST /api/auth/login` com corpo `{ cpf: string, senha: string }`,
+espelhando `LoginDto` no backend):
 
 - Campos: CPF, Senha (usando o componente `Input`, seção 4). Client-side, se algum campo estiver
   vazio ao tentar enviar, mostra `Banner` vermelho "Preencha todos os campos" (mesma mensagem que
@@ -183,11 +190,13 @@ export interface FlanelinhaPerfil {
   requisição: `{ novaSenha }` (sem `senhaAtual`, pois `PrimeiroAcesso` do Flanelinha ainda é
   `true` no backend nesse momento).
 - Sucesso (`204`): conforme a spec original — "Ao salvar a nova senha com sucesso, o app exige um
-  novo login" — limpa a sessão (`AuthContext` + `AsyncStorage`) e navega para `(auth)/login`,
-  passando um parâmetro de rota (ou estado local) que faz o login mostrar `Banner` verde "Senha
-  alterada com sucesso. Faça login novamente."
-- Falha (`400`, ex. `NovaSenha` menor que o mínimo exigido pelo backend): `Banner` vermelho com a
-  mensagem retornada pela API.
+  novo login" — limpa a sessão (`AuthContext` + `AsyncStorage`) e navega para `(auth)/login`
+  passando um parâmetro de rota (ex. `router.replace("/login?senhaAlterada=1")`) — a navegação
+  desmonta a tela de Alterar Senha, então esse dado não pode sobreviver como estado de componente
+  local; precisa ser o parâmetro de rota mesmo. A tela de login lê esse parâmetro ao montar e
+  mostra `Banner` verde "Senha alterada com sucesso. Faça login novamente."
+- Falha (`400`): `Banner` vermelho com a mensagem extraída conforme a seção 5 (formato de erro do
+  backend).
 
 **Sair** (item fixo em `DrawerContent`, presente nos dois Drawers): limpa `AuthContext` +
 `AsyncStorage`, navega para `(auth)/login`.
@@ -207,7 +216,13 @@ export interface FlanelinhaPerfil {
   `success` = fundo/texto verde, conforme paleta.
 - **`DrawerContent`**: recebe `items: { label: string; route: string; icon?: string }[]` (lista
   muda entre `(fiscal)/_layout.tsx` e `(flanelinha)/_layout.tsx`) e sempre renderiza "Sair" fixo no
-  final, independente da lista recebida.
+  final, **além dos itens recebidos** — "Sair" nunca faz parte do array `items` passado pelo layout,
+  é sempre um item extra renderizado pelo próprio `DrawerContent`. Contagem exata de itens por
+  perfil (usada na seção 6):
+  - Fiscal: `items` tem 4 entradas (Home, Cadastrar Flanelinha, Visualizar Flanelinhas, Atualizar
+    Dados) + "Sair" = **5 itens no Drawer**.
+  - Flanelinha: `items` tem 2 entradas (Home, Solicitar Carteirinha Nova) + "Sair" = **3 itens no
+    Drawer**.
 
 `src/theme/colors.ts` centraliza a paleta (usado por todos os componentes acima, não hardcoded
 em cada um):
@@ -245,6 +260,22 @@ export const colors = {
 `src/api/auth.ts` expõe funções tipadas que os componentes chamam (`login(cpf, senha)`,
 `changePassword(idFlanel, novaSenha)`), isolando a forma exata da chamada axios das telas.
 
+**Extração de mensagem de erro (`400`)**: o corpo de um `400` não tem um formato único no backend —
+depende de qual mecanismo de validação disparou:
+
+- Validação manual do controller (ex. `BadRequest("Senha atual inválida.")` em
+  `FlanelinhaController`, ou `Unauthorized(InvalidCredentialsMessage)` em `AuthController`) → corpo
+  é uma **string simples**.
+- Validação automática do `[ApiController]` via `DataAnnotations` (ex. `NovaSenha` abaixo do
+  `[MinLength(6)]` em `ChangePasswordDto`) → corpo é um `ValidationProblemDetails`, um objeto JSON
+  com um campo `errors` (dicionário `{ [campo]: string[] }`).
+
+`src/api/client.ts` exporta uma função `extractErrorMessage(error: unknown): string` usada por
+todo lugar que precisa mostrar o erro num `Banner`: se `error.response.data` for uma string,
+retorna ela direto; se for um objeto com `errors`, pega a primeira mensagem do primeiro campo do
+dicionário; caso contrário (erro de rede, sem `response`), retorna a mensagem genérica de conexão
+descrita acima.
+
 ## 6. Verificação
 
 Sem framework de testes automatizados (mesma convenção do sub-projeto 1). Verificação manual,
@@ -253,18 +284,22 @@ rodando `npx expo start` (Expo Go ou emulador) contra o backend real do sub-proj
 
 - App abre sem sessão salva → cai na tela de Login.
 - Login com CPF/senha de Fiscal válidos → vai direto para a Home do Fiscal (placeholder), Drawer
-  do Fiscal mostra os 4 itens (incluindo Sair).
+  do Fiscal mostra os 5 itens (4 telas + Sair).
 - Login com CPF/senha inválidos → `Banner` vermelho inline, permanece na tela de Login.
 - Login com CPF/senha de Flanelinha em primeiro acesso → vai para Alterar Senha, não para a Home.
 - Alterar Senha com as duas senhas diferentes → erro client-side, sem chamar a API.
 - Alterar Senha com sucesso → volta para o Login com `Banner` verde "Senha alterada com sucesso.
   Faça login novamente."
 - Login novamente com a nova senha (agora sem primeiro acesso) → vai direto para a Home do
-  Flanelinha (placeholder), Drawer do Flanelinha mostra os 2 itens (incluindo Sair).
+  Flanelinha (placeholder), Drawer do Flanelinha mostra os 3 itens (2 telas + Sair).
 - Fechar e reabrir o app (sem logout) → sessão persiste via `AsyncStorage`, pula direto pra Home
   correta sem pedir login de novo.
 - "Sair" em qualquer Drawer → volta para Login, e fechar/reabrir o app depois disso não restaura
   mais a sessão.
+- `Modal`: como não tem consumidor de negócio neste sub-projeto, verificar renderização (abrir,
+  mostrar título/conteúdo/ações, fechar) a partir de um botão de teste temporário em uma das telas
+  placeholder — remover esse botão de teste antes de considerar a tarefa concluída, ou deixá-lo
+  documentado como ponto de entrada temporário para os sub-projetos 3/4 substituírem.
 
 ## Fora de escopo
 
