@@ -11,6 +11,11 @@ namespace api.Repositories
         {
         }
 
+        public async Task<Flanelinha?> GetByCpfAsync(string cpf, CancellationToken ct = default)
+        {
+            return await _dbSet.FirstOrDefaultAsync(f => f.Cpf == cpf, ct);
+        }
+
         public async Task<List<Flanelinha>> GetAllWithCarterinhasAsync(CancellationToken ct = default)
         {
             return await _dbSet.Include(f => f.Carterinhas).ToListAsync(ct);
@@ -38,8 +43,7 @@ namespace api.Repositories
 
         public async Task<int> GetProximoNumeroCarterinhaAsync(CancellationToken ct = default)
         {
-            var maiorNumero = await _context.Carterinhas
-                .MaxAsync(c => (int?)c.NumeroCarterinha, ct);
+            var maiorNumero = await _context.Carterinhas.MaxAsync(c => (int?)c.NumeroCarterinha, ct);
             return (maiorNumero ?? 0) + 1;
         }
     }
