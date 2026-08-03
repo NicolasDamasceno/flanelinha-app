@@ -10,7 +10,7 @@
 
 **Environment note (verified hands-on before writing this plan):** `expo-router@57.0.9`'s optional `@expo/ui` dependency pulls in web-only Radix UI packages with a peer-dependency conflict that breaks plain `npm install` for anything added afterward. Task 1 adds a `.npmrc` with `legacy-peer-deps=true` as the very first step specifically to avoid this — every subsequent install in this plan (and in later sub-projects) depends on that file already being there.
 
-**Testing approach:** No automated test framework (same decision as the backend sub-project — this is a learning project with no CI). Verification is `npx tsc --noEmit` for every task. For tasks that add or change files under `mobile/app/` (new routes), run `npx expo customize tsconfig.json` **first** — this is the only non-interactive, one-shot command confirmed (via two independent implementer runs, plus a direct check) to regenerate `.expo/types/router.d.ts`, the file `typedRoutes` type-checking depends on. **`npx expo export` does NOT regenerate this file** in the currently-installed `@expo/cli` version (57.0.11) — only `expo start`'s dev server does, and repeatedly starting/stopping a dev server just to refresh types is unnecessarily slow and fragile for a non-interactive task loop. `.expo/` is gitignored, so this file is always a local, regenerable artifact, never committed. Task 11 (the last code task) adds one real `npx expo export --platform android` as an end-to-end bundling sanity check; the final task (12) adds real manual testing against the running backend via Expo Go/emulator.
+**Testing approach:** No automated test framework (same decision as the backend sub-project — this is a learning project with no CI). Verification is `npx tsc --noEmit` for every task. For tasks that add or change files under `mobile/app/` (new routes), regenerate the typed-routes definitions **first**: delete `mobile/.expo/types` (`rm -rf .expo/types`, or PowerShell `Remove-Item -Recurse -Force .expo/types -ErrorAction SilentlyContinue`), then run `npx expo customize tsconfig.json` from `mobile/`. **Both steps matter, in order** — running `expo customize tsconfig.json` alone, without deleting `.expo/types` first, was confirmed (independently, twice, by two different people running the same command from the same correct directory) to sometimes regenerate a *corrupted* types file that nonsensically lists sibling `mobile/src/**/*.tsx` files as if they were routes (e.g. `/../src/components/Input`). Deleting the directory first forces a clean rebuild every time. `npx expo export` does NOT regenerate this file at all in the currently-installed `@expo/cli` version (57.0.11) — only `expo start`'s dev server does, and repeatedly starting/stopping a dev server just to refresh types is unnecessarily slow and fragile for a non-interactive task loop. `.expo/` is gitignored, so none of this ever touches a commit. Task 11 (the last code task) adds one real `npx expo export --platform android` as an end-to-end bundling sanity check; the final task (12) adds real manual testing against the running backend via Expo Go/emulator.
 
 ---
 
@@ -614,13 +614,19 @@ First, regenerate Expo Router's typed-routes definitions — `tsc` needs `.expo/
 to exist and reflect the routes that currently exist on disk (just `/` and `/_sitemap` at this
 point) for the check below to mean anything; without it, `Href` isn't constrained and the expected
 error silently won't show. `.expo/` is gitignored, so this file may or may not already be present
-depending on what earlier tasks in this session did — don't assume either way, just regenerate it:
+depending on what earlier tasks in this session did — don't assume either way, just regenerate it.
+Run both of these from `mobile/`, in order:
 ```
+rm -rf .expo/types
 npx expo customize tsconfig.json
 ```
-(This is the one-shot, non-interactive command confirmed to regenerate `.expo/types/router.d.ts`
-— it does NOT touch the `tsconfig.json` content already in place, despite the "Generating:
-tsconfig.json" message it prints.)
+(PowerShell: `Remove-Item -Recurse -Force .expo/types -ErrorAction SilentlyContinue` for the first
+command.) `expo customize tsconfig.json` is the one-shot, non-interactive command confirmed to
+regenerate `.expo/types/router.d.ts` — it does NOT touch the `tsconfig.json` content already in
+place, despite the "Generating: tsconfig.json" message it prints. Deleting `.expo/types` first is
+required, not optional — running `expo customize` alone, without deleting first, can regenerate a
+*corrupted* types file that nonsensically includes sibling `.tsx` files outside `app/` as if they
+were routes.
 
 Then run from `mobile/`:
 ```
@@ -1043,12 +1049,15 @@ git commit -m "feat: add custom DrawerContent component"
 ## Chunk 3: Screens and navigation
 
 From this point on, tasks add or change files under `mobile/app/`. Every verification step in this
-chunk runs `npx expo customize tsconfig.json` (regenerates `.expo/types/router.d.ts` to reflect
-whatever route files currently exist on disk) **before** `npx tsc --noEmit` — **not**
-`npx expo export`, which was found (verified independently in both Task 1 and Task 4) to *not*
-regenerate this file in the currently-installed `@expo/cli` version. Without the regeneration
-step, a task that both creates a new route *and* references it elsewhere in the same task could
-show a false `tsc` pass or fail against a stale types snapshot from an earlier task.
+chunk deletes `mobile/.expo/types` and runs `npx expo customize tsconfig.json` (regenerates
+`.expo/types/router.d.ts` to reflect whatever route files currently exist on disk) **before**
+`npx tsc --noEmit` — **not** `npx expo export`, which was found (verified independently in both
+Task 1 and Task 4) to *not* regenerate this file in the currently-installed `@expo/cli` version.
+The delete-first step matters too — running `expo customize` without it was independently
+reproduced twice to sometimes regenerate a corrupted types file (see Task 5's commit history for
+the concrete example). Without a clean regeneration, a task that both creates a new route *and*
+references it elsewhere in the same task could show a false `tsc` pass or fail against a stale or
+corrupted types snapshot.
 
 ### Task 7: Fiscal Drawer and placeholder screens
 
@@ -1125,8 +1134,10 @@ export default function FiscalPerfilScreen() {
 
 - [ ] **Step 3: Verify**
 
-Run from `mobile/`:
+Run from `mobile/` (delete-then-regenerate, in this order — see Chunk 3's intro for why the
+delete matters):
 ```
+rm -rf .expo/types
 npx expo customize tsconfig.json
 ```
 (Regenerates `.expo/types/router.d.ts` to reflect the new `fiscal/*` routes just created — do NOT
@@ -1202,9 +1213,11 @@ export default function SolicitarCarteirinhaScreen() {
 
 Run from `mobile/`:
 ```
+rm -rf .expo/types
 npx expo customize tsconfig.json
 ```
-(Regenerates `.expo/types/router.d.ts` to reflect the new `flanelinha/*` routes.)
+(Regenerates `.expo/types/router.d.ts` to reflect the new `flanelinha/*` routes. Delete-then-regenerate,
+in this order — see Chunk 3's intro for why the delete matters.)
 
 Then:
 ```
@@ -1314,9 +1327,11 @@ const styles = StyleSheet.create({
 
 Run from `mobile/`:
 ```
+rm -rf .expo/types
 npx expo customize tsconfig.json
 ```
-(Regenerates `.expo/types/router.d.ts` to reflect the new `/login` route.)
+(Regenerates `.expo/types/router.d.ts` to reflect the new `/login` route. Delete-then-regenerate,
+in this order — see Chunk 3's intro for why the delete matters.)
 
 Then:
 ```
@@ -1447,9 +1462,11 @@ reset UI state that no longer matters once navigation has already happened.
 
 Run from `mobile/`:
 ```
+rm -rf .expo/types
 npx expo customize tsconfig.json
 ```
-(Regenerates `.expo/types/router.d.ts` to reflect the new `/alterar-senha` route.)
+(Regenerates `.expo/types/router.d.ts` to reflect the new `/alterar-senha` route.
+Delete-then-regenerate, in this order — see Chunk 3's intro for why the delete matters.)
 
 Then:
 ```
@@ -1538,10 +1555,12 @@ provider.
 
 Run from `mobile/`:
 ```
+rm -rf .expo/types
 npx expo customize tsconfig.json
 ```
 (Regenerates `.expo/types/router.d.ts` — no new routes were added in this task, but this keeps the
-verification self-contained rather than relying on a previous task having left a fresh copy.)
+verification self-contained rather than relying on a previous task having left a fresh copy.
+Delete-then-regenerate, in this order — see Chunk 3's intro for why the delete matters.)
 
 Then:
 ```
