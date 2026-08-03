@@ -78,16 +78,25 @@ mobile/
     (auth)/
       login.tsx
       alterar-senha.tsx             # Fluxo de primeiro acesso do Flanelinha
-    (fiscal)/
+    fiscal/
       _layout.tsx                   # Drawer navigator do Fiscal (expo-router/drawer)
       home.tsx                      # Placeholder — conteúdo real no sub-projeto 3
       cadastrar-flanelinha.tsx      # Placeholder
       flanelinhas.tsx               # Placeholder (lista/consulta)
       perfil.tsx                    # Placeholder (atualização de dados do Fiscal)
-    (flanelinha)/
+    flanelinha/
       _layout.tsx                   # Drawer navigator do Flanelinha
       home.tsx                      # Placeholder — conteúdo real no sub-projeto 4 (carteira digital)
       solicitar-carteirinha.tsx     # Placeholder
+```
+
+**Nota sobre nomes de pasta (`fiscal/`/`flanelinha/`, sem parênteses):** `(auth)` é um *route group*
+do Expo Router — os parênteses fazem a pasta não aparecer na URL da rota (`(auth)/login.tsx` vira
+a rota `/login`). Se `fiscal` e `flanelinha` também fossem grupos (`(fiscal)/home.tsx` e
+`(flanelinha)/home.tsx`), as duas pastas produziriam a **mesma rota `/home`** — colisão. Por isso
+`fiscal/` e `flanelinha/` são pastas normais (sem parênteses), o que os inclui na URL
+(`/fiscal/home`, `/flanelinha/home`) e evita a colisão. Isso não é visível para quem usa o app
+(não há barra de endereço) — é só a forma como as rotas internas são identificadas.
   src/
     api/
       client.ts                     # Instância axios + interceptors (ver seção 5)
@@ -157,9 +166,10 @@ export interface FlanelinhaPerfil {
    `isLoading = true` — `app/index.tsx` mostra um estado de carregamento neutro (sem flash de tela
    errada).
 2. Com a leitura concluída:
-   - Sem sessão salva → redireciona para `(auth)/login`.
-   - Sessão salva com `tipoPerfil === "Fiscal"` → redireciona para `(fiscal)/home`.
-   - Sessão salva com `tipoPerfil === "Flanelinha"` → redireciona para `(flanelinha)/home`.
+   - Sem sessão salva → redireciona para `(auth)/login` (rota `/login`).
+   - Sessão salva com `tipoPerfil === "Fiscal"` → redireciona para `fiscal/home` (rota `/fiscal/home`).
+   - Sessão salva com `tipoPerfil === "Flanelinha"` → redireciona para `flanelinha/home` (rota
+     `/flanelinha/home`).
    - Não há verificação de expiração do JWT nesta etapa — se o token estiver expirado, a primeira
      chamada autenticada feita pela tela de destino vai receber `401` e cair no interceptor global
      (seção 5), que desloga e redireciona para o login. Decodificar o JWT no cliente só para checar
@@ -174,7 +184,7 @@ espelhando `LoginDto` no backend):
 - Sucesso (`200`): salva `{ token, tipoPerfil, perfil }` no `AuthContext` e no `AsyncStorage`.
   - `tipoPerfil === "Flanelinha" && primeiroAcesso === true` → navega para `(auth)/alterar-senha`
     (a Home do Flanelinha não é alcançável antes de trocar a senha).
-  - Caso contrário → navega para `(fiscal)/home` ou `(flanelinha)/home` conforme `tipoPerfil`.
+  - Caso contrário → navega para `fiscal/home` ou `flanelinha/home` conforme `tipoPerfil`.
 - Falha (`401`): `Banner` vermelho "CPF ou senha inválidos" (mesmo texto que o backend retorna).
   Tratado localmente pela própria tela — este `401` nunca aciona o interceptor global de logout
   (seção 5), porque a chamada de login não carrega nenhuma sessão pra invalidar.
@@ -215,7 +225,7 @@ espelhando `LoginDto` no backend):
 - **`Banner`**: `type: "error" | "success"`, `message: string`. `error` = fundo/texto vermelho,
   `success` = fundo/texto verde, conforme paleta.
 - **`DrawerContent`**: recebe `items: { label: string; route: string; icon?: string }[]` (lista
-  muda entre `(fiscal)/_layout.tsx` e `(flanelinha)/_layout.tsx`) e sempre renderiza "Sair" fixo no
+  muda entre `fiscal/_layout.tsx` e `flanelinha/_layout.tsx`) e sempre renderiza "Sair" fixo no
   final, **além dos itens recebidos** — "Sair" nunca faz parte do array `items` passado pelo layout,
   é sempre um item extra renderizado pelo próprio `DrawerContent`. Contagem exata de itens por
   perfil (usada na seção 6):
