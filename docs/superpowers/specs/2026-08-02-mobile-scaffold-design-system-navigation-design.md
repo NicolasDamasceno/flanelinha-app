@@ -246,6 +246,7 @@ export const colors = {
   success: "#16A34A",
   successBackground: "#DCFCE7",
   textMuted: "#64748B",
+  text: "#1F2937",
   border: "#CBD5E1",
 };
 ```
