@@ -283,7 +283,7 @@ export const colors = {
   errorBackground: "#FEE2E2",
   success: "#16A34A",
   successBackground: "#DCFCE7",
-  textMuted: "#94A3B8",
+  textMuted: "#64748B",
   border: "#CBD5E1",
 };
 ```
