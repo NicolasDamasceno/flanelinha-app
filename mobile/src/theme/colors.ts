@@ -5,6 +5,7 @@ export const colors = {
   errorBackground: "#FEE2E2",
   success: "#16A34A",
   successBackground: "#DCFCE7",
+  text: "#1F2937",
   textMuted: "#64748B",
   border: "#CBD5E1",
 };

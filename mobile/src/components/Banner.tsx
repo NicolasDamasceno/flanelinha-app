@@ -16,7 +16,12 @@ export function Banner({ type, message }: BannerProps) {
         { backgroundColor: isError ? colors.errorBackground : colors.successBackground },
       ]}
     >
-      <Text style={{ color: isError ? colors.error : colors.success }}>{message}</Text>
+      <Text
+        accessibilityRole="alert"
+        style={{ color: isError ? colors.error : colors.success }}
+      >
+        {message}
+      </Text>
     </View>
   );
 }
