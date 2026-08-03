@@ -49,10 +49,12 @@ export function extractErrorMessage(error: unknown): string {
   }
 
   if (data && typeof data === "object" && "errors" in data) {
-    const errors = (data as { errors: Record<string, string[]> }).errors;
-    const firstField = Object.values(errors)[0];
-    if (firstField && firstField.length > 0) {
-      return firstField[0];
+    const errors = (data as { errors?: unknown }).errors;
+    if (errors && typeof errors === "object") {
+      const firstField = Object.values(errors as Record<string, unknown>)[0];
+      if (Array.isArray(firstField) && firstField.length > 0 && typeof firstField[0] === "string") {
+        return firstField[0];
+      }
     }
   }
 
