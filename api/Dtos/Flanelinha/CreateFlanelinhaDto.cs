@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace api.Dtos.Flanelinha
 {
@@ -18,7 +14,5 @@ namespace api.Dtos.Flanelinha
         [Required]
         [MinLength(6)]
         public string Senha { get; set; } = "Senha123";
-
-        public int? IdFiscal { get; set; }
     }
 }

@@ -33,8 +33,7 @@ namespace api.Mappers
                 Telefone = flanelinhaDto.Telefone,
                 Ativo = flanelinhaDto.Ativo,
                 Senha = flanelinhaDto.Senha,
-                DataCadastro = DateTime.UtcNow,
-                IdFiscal = flanelinhaDto.IdFiscal
+                DataCadastro = DateTime.UtcNow
             };
         }
 
