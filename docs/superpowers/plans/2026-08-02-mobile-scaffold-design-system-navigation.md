@@ -974,13 +974,21 @@ git commit -m "feat: add Button, Input, Banner, Modal, and PlaceholderScreen com
 - [ ] **Step 1: Custom drawer content**
 
 Create `mobile/src/components/DrawerContent.tsx`. Built with plain `Pressable`/`Text` for
-individual items (not `DrawerItem` from `@react-navigation/drawer`) — this avoids depending on that
-component's own prop-shape contract for custom drawer content, while still using
-`DrawerContentScrollView` (from the same package) for the scroll container, since that part carries
-no such coupling and is the only thing providing safe-area inset padding (the Drawer navigator
-itself, via `expo-router/drawer` in Task 7/8, does not pad its `drawerContent` render output):
+individual items (not `DrawerItem`) — this avoids depending on that component's own prop-shape
+contract for custom drawer content, while still using `DrawerContentScrollView` for the scroll
+container, since that part carries no such coupling and is the only thing providing safe-area
+inset padding (the Drawer navigator itself, via `expo-router/drawer` in Task 7/8, does not pad its
+`drawerContent` render output). **Import `DrawerContentScrollView` from `expo-router/drawer`, NOT
+`@react-navigation/drawer` directly** — expo-router SDK 56+ vendors its own fork of the drawer
+navigator and rejects direct imports of the npm package at Metro bundle time (this was found the
+hard way: it type-checks fine either way, since both packages export a same-shaped component, but
+only surfaces as a real error during `expo export`'s actual bundling step — see
+[expo/expo#46161](https://github.com/expo/expo/issues/46161)):
 ```tsx
-import { DrawerContentScrollView } from "@react-navigation/drawer";
+// Must import from expo-router/drawer, not @react-navigation/drawer directly — expo-router
+// vendors its own fork of the drawer navigator (SDK 56+) and rejects direct imports of the
+// npm package at bundle time. See https://github.com/expo/expo/issues/46161
+import { DrawerContentScrollView } from "expo-router/drawer";
 import { router, usePathname, type Href } from "expo-router";
 import { Pressable, StyleSheet, Text } from "react-native";
 import { useAuth } from "@/context/AuthContext";
