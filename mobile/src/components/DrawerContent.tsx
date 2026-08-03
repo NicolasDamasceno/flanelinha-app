@@ -1,5 +1,5 @@
 import { router, usePathname, type Href } from "expo-router";
-import { DrawerContentScrollView } from "@react-navigation/drawer";
+import { DrawerContentScrollView } from "expo-router/drawer";
 import { Pressable, StyleSheet, Text } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { colors } from "@/theme/colors";
