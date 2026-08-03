@@ -284,6 +284,7 @@ export const colors = {
   success: "#16A34A",
   successBackground: "#DCFCE7",
   textMuted: "#64748B",
+  text: "#1F2937",
   border: "#CBD5E1",
 };
 ```
@@ -691,6 +692,8 @@ export function Button({
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       style={[
         styles.base,
         variant === "primary" ? styles.primary : styles.secondary,
@@ -759,6 +762,7 @@ export function Input({ label, error, style, ...rest }: InputProps) {
       <TextInput
         style={[styles.input, error ? styles.inputError : null, style]}
         placeholderTextColor={colors.textMuted}
+        accessibilityLabel={label}
         {...rest}
       />
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -774,7 +778,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 6,
-    color: "#1F2937",
+    color: colors.text,
   },
   input: {
     borderWidth: 1,
@@ -817,7 +821,9 @@ export function Banner({ type, message }: BannerProps) {
         { backgroundColor: isError ? colors.errorBackground : colors.successBackground },
       ]}
     >
-      <Text style={{ color: isError ? colors.error : colors.success }}>{message}</Text>
+      <Text accessibilityRole="alert" style={{ color: isError ? colors.error : colors.success }}>
+        {message}
+      </Text>
     </View>
   );
 }
@@ -1014,7 +1020,7 @@ const styles = StyleSheet.create({
   },
   itemLabel: {
     fontSize: 16,
-    color: "#1F2937",
+    color: colors.text,
   },
   logoutLabel: {
     color: colors.error,
