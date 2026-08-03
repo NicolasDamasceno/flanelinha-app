@@ -999,11 +999,12 @@ export function DrawerContent({ items }: DrawerContentProps) {
           key={item.route.toString()}
           style={styles.item}
           onPress={() => router.push(item.route)}
+          accessibilityRole="button"
         >
           <Text style={styles.itemLabel}>{item.label}</Text>
         </Pressable>
       ))}
-      <Pressable style={styles.item} onPress={() => logout()}>
+      <Pressable style={styles.item} onPress={() => logout()} accessibilityRole="button">
         <Text style={[styles.itemLabel, styles.logoutLabel]}>Sair</Text>
       </Pressable>
     </ScrollView>
