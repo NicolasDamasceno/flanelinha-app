@@ -387,7 +387,7 @@ Create `mobile/src/api/client.ts`:
 import axios from "axios";
 import { getCurrentToken, triggerUnauthorized } from "@/context/authStore";
 
-const LOGIN_PATH = "/api/auth/login";
+export const LOGIN_PATH = "/api/auth/login";
 
 export const apiClient = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,
@@ -455,11 +455,11 @@ reliable regardless of what `EXPO_PUBLIC_API_URL` is set to.
 
 Create `mobile/src/api/auth.ts`:
 ```typescript
-import { apiClient } from "@/api/client";
+import { apiClient, LOGIN_PATH } from "@/api/client";
 import type { LoginResponse } from "@/types/auth";
 
 export async function login(cpf: string, senha: string): Promise<LoginResponse> {
-  const response = await apiClient.post<LoginResponse>("/api/auth/login", {
+  const response = await apiClient.post<LoginResponse>(LOGIN_PATH, {
     cpf,
     senha,
   });
