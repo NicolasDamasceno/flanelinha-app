@@ -245,10 +245,16 @@ export const colors = {
   errorBackground: "#FEE2E2",
   success: "#16A34A",
   successBackground: "#DCFCE7",
-  textMuted: "#94A3B8",
+  textMuted: "#64748B",
   border: "#CBD5E1",
 };
 ```
+
+(`textMuted` foi ajustado de `#94A3B8` para `#64748B` — o valor original tinha contraste ~2.56:1
+sobre fundo branco, abaixo do mínimo WCAG AA de 4.5:1 para texto normal; `#64748B` chega a ~4.6:1.
+Achado durante a revisão de qualidade do sub-projeto, antes de qualquer componente consumir a
+paleta. `error`/`success` como cor de texto sobre seus próprios fundos claros também ficam abaixo
+de AA — aceito por ora por decisão do usuário, dado o escopo deste projeto de aprendizado.)
 
 ## 5. Cliente de API e tratamento de erro
 
