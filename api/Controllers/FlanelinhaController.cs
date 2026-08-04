@@ -86,6 +86,33 @@ namespace api.Controllers
             return NoContent();
         }
 
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Fiscal")]
+        public async Task<IActionResult> UpdateByFiscal(int id, [FromBody] UpdateFlanelinhaDto dto, CancellationToken ct)
+        {
+            var flanelinha = await _flanelinhaRepository.GetByIdAsync(id, ct);
+
+            if (flanelinha == null)
+            {
+                return NotFound();
+            }
+
+            if (flanelinha.IdFiscal != AuthenticatedId)
+            {
+                return Forbid();
+            }
+
+            flanelinha.Nome = dto.Nome;
+            flanelinha.Email = dto.Email;
+            flanelinha.PontoAtuacao = dto.PontoAtuacao;
+            flanelinha.Telefone = dto.Telefone;
+            flanelinha.Ativo = dto.Ativo;
+
+            await _flanelinhaRepository.SaveChangesAsync(ct);
+
+            return Ok(flanelinha.ToFlanelinhaDto());
+        }
+
         [HttpPut("{id}/perfil")]
         [Authorize(Roles = "Flanelinha")]
         public async Task<IActionResult> UpdatePerfil(int id, [FromBody] UpdatePerfilDto perfilDto, CancellationToken ct)
