@@ -49,7 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     AsyncStorage.getItem(SESSION_STORAGE_KEY)
       .then((raw) => {
         if (raw) {
-          setSession(JSON.parse(raw) as Session);
+          const parsed = JSON.parse(raw) as Session;
+          sessionRef.current = parsed;
+          setSession(parsed);
         }
       })
       .finally(() => setIsLoading(false));
@@ -61,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   const logout = useCallback(async (params?: Record<string, string>) => {
+    sessionRef.current = null;
     setSession(null);
     await AsyncStorage.removeItem(SESSION_STORAGE_KEY);
     router.replace({ pathname: "/login", params: params ?? {} });
@@ -73,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (cpf: string, senha: string) => {
     const response = await apiLogin(cpf, senha);
     const newSession = toSession(response);
+    sessionRef.current = newSession;
     setSession(newSession);
     await AsyncStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newSession));
     return response;
