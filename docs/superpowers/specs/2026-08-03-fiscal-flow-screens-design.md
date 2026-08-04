@@ -337,9 +337,10 @@ destaque, Ponto de Atuação como subtítulo, badge "Ativo"/"Inativo" (verde/ver
   atualizados ao voltar, sem precisar de um mecanismo de cache/invalidação mais sofisticado.
 - Lista vazia: texto centralizado "Nenhum Flanelinha cadastrado ainda." (sem ilustração/componente
   novo).
-- Ao montar com `params.cadastroSucesso === "1"` ou `params.edicaoSucesso === "1"`, mostra o
-  `Banner` verde correspondente ("Flanelinha cadastrado com sucesso." / "Alterações salvas com
-  sucesso.") acima da lista.
+- Ao montar com `params.cadastroSucesso === "1"`, `params.edicaoSucesso === "1"` ou
+  `params.exclusaoSucesso === "1"`, mostra o `Banner` verde correspondente ("Flanelinha cadastrado
+  com sucesso." / "Alterações salvas com sucesso." / "Flanelinha excluído com sucesso.") acima da
+  lista.
 - Erro ao carregar: `Banner` vermelho com `extractErrorMessage(error)` no lugar da lista.
 
 ### 3.4 Detalhe/Editar Flanelinha (`fiscal/flanelinha/[id].tsx`)
