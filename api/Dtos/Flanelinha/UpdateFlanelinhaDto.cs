@@ -17,6 +17,7 @@ namespace api.Dtos.Flanelinha
         [Required]
         public string Telefone { get; set; } = string.Empty;
 
-        public bool Ativo { get; set; }
+        [Required]
+        public bool? Ativo { get; set; }
     }
 }
