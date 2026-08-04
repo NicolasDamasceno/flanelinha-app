@@ -88,6 +88,12 @@ Mesmo padrão de checagem de propriedade já usado em `GetById`/`Delete` nesse c
 `Forbid()` se o Flanelinha não pertence ao Fiscal autenticado). `Cpf` não é editável — mesma
 convenção do `UpdatePerfilDto` existente, que também não expõe o CPF.
 
+Usa `GetByIdAsync` (não `GetByIdWithCarterinhasAsync`) — mesmo método já usado por `Delete` nesse
+controller — então o `carterinhas` no `FlanelinhaDto` de resposta vem vazio independente das
+carteirinhas reais do Flanelinha. Não é um bug: nenhuma tela deste sub-projeto usa o `carterinhas`
+da resposta desse endpoint (a tela de detalhe, seção 3.4, já tem os dados que precisa a partir do
+`GET` inicial).
+
 Novo `api/Dtos/Flanelinha/UpdateFlanelinhaDto.cs`:
 
 ```csharp
@@ -129,16 +135,25 @@ mobile/
       flanelinhas.tsx                 # Conteúdo real — lista (era placeholder)
       perfil.tsx                      # Conteúdo real (era placeholder)
       flanelinha/
-        [id].tsx                      # Novo — tela de detalhe/edição
+        [id].tsx                      # Novo — tela de detalhe/edição. Nome no singular
+                                       # (distinto de flanelinhas.tsx, a lista, e de
+                                       # app/flanelinha/ — as rotas do perfil Flanelinha,
+                                       # pasta irmã fora de fiscal/): evita colisão com o
+                                       # arquivo flanelinhas.tsx já existente no mesmo nível
+                                       # (Expo Router não permite um arquivo e uma pasta de
+                                       # mesmo nome na mesma pasta pai).
   src/
     api/
       flanelinha.ts                   # Novo — CRUD de Flanelinha do ponto de vista do Fiscal
       fiscal.ts                       # Novo — atualizar perfil e trocar senha do próprio Fiscal
     types/
       flanelinha.ts                   # Novo — FlanelinhaDto, CarterinhaDto, Create/UpdateFlanelinhaDto
+    context/
+      AuthContext.tsx                 # Modificado — novo método updateProfile (seção 3.5)
 ```
 
-`fiscal/flanelinha/[id].tsx` é uma rota dinâmica dentro da mesma pasta `fiscal/`, então continua
+`fiscal/flanelinha/[id].tsx` (nome no singular — ver nota na árvore de arquivos acima) é uma rota
+dinâmica dentro da mesma pasta `fiscal/`, então continua
 dentro do `<Drawer>` já configurado em `fiscal/_layout.tsx` (o Drawer continua acessível a partir
 dela) — não precisa aparecer na lista `items` do `DrawerContent` nem ser declarada como
 `<Drawer.Screen>` explícita em `_layout.tsx`; é alcançada só por navegação programática
@@ -153,7 +168,10 @@ export interface CarterinhaDto {
   dataEmissao: string;
   dataValidade: string;
   ativo: boolean;
-  tipo: string;
+  tipo: number; // TipoCarterinha do backend, serializado como int (sem JsonStringEnumConverter
+                // registrado em Program.cs) — 1 = PrimeiraVia, 2 = SegundaVia. Não usado por
+                // nenhuma tela deste sub-projeto; tipado corretamente aqui só pra manter o
+                // espelhamento do DTO honesto.
 }
 
 export interface FlanelinhaDto {
@@ -246,6 +264,33 @@ export async function changeFiscalPassword(
 (Reutiliza o tipo `FiscalPerfil` já definido em `src/types/auth.ts` — mesma forma retornada por
 `ToFiscalDto()` no backend.)
 
+**Extensão do `AuthContext`** (`src/context/AuthContext.tsx`): a tela de Atualizar Dados (seção
+3.5) precisa refletir o novo Nome/Email na sessão em memória e no `AsyncStorage` depois de um
+`PUT .../perfil` bem-sucedido, mas o `AuthContext` atual só expõe `login`/`logout` — nenhum dos
+dois serve pra uma atualização parcial de um perfil já autenticado. Novo método `updateProfile`,
+seguindo o mesmo padrão de `login` (monta a sessão nova, atualiza o estado, persiste no
+`AsyncStorage`):
+
+```typescript
+const updateProfile = useCallback(
+  async (perfil: FiscalPerfil | FlanelinhaPerfil) => {
+    if (!session) {
+      return;
+    }
+    const nextSession: Session = { ...session, perfil };
+    setSession(nextSession);
+    await AsyncStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextSession));
+  },
+  [session]
+);
+```
+
+Adicionado a `AuthContextValue` (`updateProfile: (perfil: FiscalPerfil | FlanelinhaPerfil) =>
+Promise<void>`) e ao objeto retornado por `useMemo` (junto com `session`, `isLoading`, `login`,
+`logout`), incluindo `updateProfile` nas dependências do `useMemo`. Não precisa de checagem de
+`tipoPerfil` — quem chama já sabe qual tipo de `perfil` está passando (a tela de Atualizar Dados do
+Fiscal, seção 3.5, só existe no fluxo do Fiscal).
+
 ## 3. Telas
 
 Layout visual de todas as telas abaixo confirmado via companion visual (mockups com os tokens de
@@ -325,8 +370,8 @@ Duas seções na mesma tela, cada uma com seu próprio estado de erro/sucesso (`
 compartilhado entre as seções):
 
 - **Dados**: `Input` Nome/Email pré-preenchidos com `perfil` do `AuthContext`. Botão "Salvar Dados"
-  chama `updateFiscalPerfil(idFiscal, dto)`. Sucesso (`200`): atualiza o `perfil` no `AuthContext`
-  (e no `AsyncStorage`, já que `AuthContext` persiste sessão) com os novos valores, e mostra
+  chama `updateFiscalPerfil(idFiscal, dto)`. Sucesso (`200`): chama `updateProfile(response)` (novo
+  método do `AuthContext`, ver seção 2) com o `FiscalPerfil` retornado pelo backend, e mostra
   `Banner` verde "Dados atualizados com sucesso." acima da seção — permanece na mesma tela (não há
   navegação, ao contrário do cadastro/edição de Flanelinha, porque aqui não existe uma "lista" pra
   onde voltar).
