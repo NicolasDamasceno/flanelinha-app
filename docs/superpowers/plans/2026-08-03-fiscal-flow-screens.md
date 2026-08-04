@@ -794,23 +794,7 @@ git commit -m "feat: implement Visualizar Flanelinhas list screen"
 **Files:**
 - Create: `mobile/app/fiscal/flanelinha/[id].tsx`
 
-- [ ] **Step 1: Regenerate typed routes first**
-
-New dynamic route files require Expo Router to regenerate `.expo/types/router.d.ts` before
-`useLocalSearchParams`/`router.push` calls referencing them will type-check — same requirement
-discovered in the mobile scaffold sub-project. Run from `mobile/`:
-
-```bash
-rm -rf .expo/types
-npx expo customize tsconfig.json
-```
-
-(This second command's actual job — customizing `tsconfig.json` — is a no-op if it's already
-customized; its real purpose here is the side effect of regenerating `.expo/types/router.d.ts`.
-Confirm it doesn't overwrite unrelated content in `tsconfig.json`; if it prompts to overwrite, keep
-the existing file's content.)
-
-- [ ] **Step 2: Create the screen**
+- [ ] **Step 1: Create the screen**
 
 ```typescript
 // mobile/app/fiscal/flanelinha/[id].tsx
@@ -1013,6 +997,24 @@ reasoning already applied to skipping a reusable toggle/loading component in the
 you see it running, that's a one-line follow-up (add a `"danger"` variant to `Button.tsx`), not a
 blocker for this task.
 
+- [ ] **Step 2: Regenerate typed routes**
+
+New dynamic route files require Expo Router to regenerate `.expo/types/router.d.ts` before
+`useLocalSearchParams`/`router.push` calls referencing them will type-check — same requirement
+discovered in the mobile scaffold sub-project. This has to run **after** the file from Step 1
+exists on disk, since Expo scans the actual files under `app/` to generate the types. Run from
+`mobile/`:
+
+```bash
+rm -rf .expo/types
+npx expo customize tsconfig.json
+```
+
+(This second command's actual job — customizing `tsconfig.json` — is a no-op if it's already
+customized; its real purpose here is the side effect of regenerating `.expo/types/router.d.ts`.
+Confirm it doesn't overwrite unrelated content in `tsconfig.json`; if it prompts to overwrite, keep
+the existing file's content.)
+
 - [ ] **Step 3: Verify**
 
 Run from `mobile/`:
@@ -1024,7 +1026,7 @@ Expected: no output (success) — this also resolves the temporary error left by
 - [ ] **Step 4: Commit**
 
 ```bash
-git add mobile/app/fiscal/flanelinha/ mobile/.expo/types mobile/tsconfig.json
+git add mobile/app/fiscal/flanelinha/
 git commit -m "feat: implement Flanelinha detail/edit screen with delete confirmation"
 ```
 
