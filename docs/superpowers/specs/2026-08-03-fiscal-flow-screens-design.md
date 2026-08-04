@@ -48,10 +48,11 @@ cobrir essa lacuna.
 
 ## 1. Extensão do backend
 
-Novo endpoint em `FiscalController` — **não** em `FlanelinhaController/{id}/perfil`, que continua
-restrito ao próprio Flanelinha (`Authorize(Roles = "Flanelinha")`) e só cobre Nome/Email. A edição
-pelo Fiscal precisa de uma rota própria porque abrange mais campos e tem uma regra de autorização
-diferente (dono do cadastro, não o próprio Flanelinha).
+Novo endpoint em `FlanelinhaController` — **não** reaproveitando a rota `{id}/perfil` já existente
+nesse mesmo controller, que continua restrita ao próprio Flanelinha (`Authorize(Roles =
+"Flanelinha")`) e só cobre Nome/Email. A edição pelo Fiscal precisa de uma rota própria porque
+abrange mais campos e tem uma regra de autorização diferente (dono do cadastro, não o próprio
+Flanelinha).
 
 `api/Controllers/FlanelinhaController.cs` — novo action:
 
@@ -298,7 +299,9 @@ Layout visual de todas as telas abaixo confirmado via companion visual (mockups 
 
 ### 3.1 Home (`fiscal/home.tsx`)
 
-Ao montar, chama `listFlanelinhas()` e mostra:
+Chama `listFlanelinhas()` sempre que a tela ganha foco (`useFocusEffect`, mesmo mecanismo da seção
+3.3 — necessário porque o `<Drawer>` do Expo Router mantém as telas montadas ao trocar de aba, então
+um `useEffect` de montagem não rodaria de novo só por sair e voltar pra Home) e mostra:
 
 - Saudação: "Olá, `{perfil.nome}`" (do `AuthContext`) + subtítulo "Bem-vindo de volta".
 - Dois cartões de resumo lado a lado: total de itens retornados (**Flanelinhas cadastrados**) e
@@ -307,8 +310,8 @@ Ao montar, chama `listFlanelinhas()` e mostra:
 Enquanto a chamada está em andamento, mostra um `ActivityIndicator` simples no lugar dos cartões
 (sem um novo componente de loading — o design system ainda não tem um, e criar um só para isso é
 desproporcional ao escopo). Erro de rede/servidor: `Banner` vermelho com
-`extractErrorMessage(error)` no lugar dos cartões, sem opção de retry nesta etapa (reabrir a tela —
-trocar de aba no Drawer e voltar — já refaz a chamada).
+`extractErrorMessage(error)` no lugar dos cartões — trocar de aba no Drawer e voltar pra Home aciona
+o `useFocusEffect` de novo, funcionando como retry sem precisar de um botão dedicado.
 
 ### 3.2 Cadastrar Flanelinha (`fiscal/cadastrar-flanelinha.tsx`)
 
@@ -368,7 +371,11 @@ mostrado como texto somente-leitura (não é um `Input` editável), já que não
 ### 3.5 Atualizar Dados (`fiscal/perfil.tsx`)
 
 Duas seções na mesma tela, cada uma com seu próprio estado de erro/sucesso (`Banner` local, não
-compartilhado entre as seções):
+compartilhado entre as seções). `idFiscal` vem de `(session.perfil as FiscalPerfil).idFiscal` — sob
+`strict: true` (`tsconfig.json`), `session.perfil` é `FiscalPerfil | FlanelinhaPerfil`, e só o
+primeiro tem `idFiscal: number` sem ser opcional/nulo; mesmo padrão de cast já usado em
+`(auth)/alterar-senha.tsx` pro caso equivalente do Flanelinha — seguro aqui porque esta tela só é
+alcançável dentro do fluxo do Fiscal.
 
 - **Dados**: `Input` Nome/Email pré-preenchidos com `perfil` do `AuthContext`. Botão "Salvar Dados"
   chama `updateFiscalPerfil(idFiscal, dto)`. Sucesso (`200`): chama `updateProfile(response)` (novo
@@ -423,3 +430,5 @@ manual contra o backend real (`dotnet run` em `api/`):
 - Testes automatizados (mesma decisão já tomada nos sub-projetos anteriores).
 - Um componente de toggle reutilizável no design system — usado `Switch` nativo diretamente nesta
   etapa (seção 3.4), já que é o único lugar que precisa disso até agora.
+- Um componente de loading reutilizável no design system — usado `ActivityIndicator` nativo
+  diretamente nesta etapa (seção 3.1), pelo mesmo motivo.
