@@ -390,7 +390,6 @@ import type { FiscalPerfil } from "@/types/auth";
 
 export default function FiscalHomeScreen() {
   const { session } = useAuth();
-  const perfil = session?.perfil as FiscalPerfil;
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -422,6 +421,15 @@ export default function FiscalHomeScreen() {
       };
     }, [])
   );
+
+  if (!session) {
+    // Home stays mounted while the Drawer is alive, and logout() clears the session
+    // synchronously before the navigation to /login actually completes — so this screen can
+    // briefly re-render with session === null. Bail out rather than crash on session.perfil.
+    return null;
+  }
+
+  const perfil = session.perfil as FiscalPerfil;
 
   return (
     <View style={styles.container}>
@@ -1054,10 +1062,16 @@ import type { FiscalPerfil } from "@/types/auth";
 
 export default function FiscalPerfilScreen() {
   const { session, updateProfile } = useAuth();
-  const perfil = session?.perfil as FiscalPerfil;
+  // Optional, not cast to a definite FiscalPerfil: this screen stays mounted while the Drawer is
+  // alive, and it's the screen the "Sair" verification step actually logs out from (Task 9) —
+  // logout() clears the session synchronously before navigating away, so a re-render with
+  // session === null is not just possible here, it's the expected path. useState below only
+  // needs perfil's fields for their *initial* mount-time value, so a safe fallback is enough;
+  // the render guard further down handles everything after mount.
+  const perfil = session?.perfil as FiscalPerfil | undefined;
 
-  const [nome, setNome] = useState(perfil.nome);
-  const [email, setEmail] = useState(perfil.email);
+  const [nome, setNome] = useState(perfil?.nome ?? "");
+  const [email, setEmail] = useState(perfil?.email ?? "");
   const [dadosError, setDadosError] = useState<string | null>(null);
   const [dadosSuccess, setDadosSuccess] = useState<string | null>(null);
   const [isSavingDados, setIsSavingDados] = useState(false);
@@ -1070,6 +1084,8 @@ export default function FiscalPerfilScreen() {
   const [isSavingSenha, setIsSavingSenha] = useState(false);
 
   async function handleSaveDados() {
+    if (!perfil) return;
+
     setDadosSuccess(null);
 
     const nomeValue = nome.trim();
@@ -1095,6 +1111,8 @@ export default function FiscalPerfilScreen() {
   }
 
   async function handleChangePassword() {
+    if (!perfil) return;
+
     setSenhaSuccess(null);
 
     const senhaAtualValue = senhaAtual.trim();
@@ -1125,6 +1143,10 @@ export default function FiscalPerfilScreen() {
     } finally {
       setIsSavingSenha(false);
     }
+  }
+
+  if (!perfil) {
+    return null;
   }
 
   return (
