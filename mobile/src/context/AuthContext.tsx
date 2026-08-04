@@ -26,6 +26,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (cpf: string, senha: string) => Promise<LoginResponse>;
   logout: (params?: Record<string, string>) => Promise<void>;
+  updateProfile: (perfil: FiscalPerfil | FlanelinhaPerfil) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -74,9 +75,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return response;
   }, []);
 
+  const updateProfile = useCallback(
+    async (perfil: FiscalPerfil | FlanelinhaPerfil) => {
+      if (!session) {
+        return;
+      }
+      const nextSession: Session = { ...session, perfil };
+      setSession(nextSession);
+      await AsyncStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextSession));
+    },
+    [session]
+  );
+
   const value = useMemo(
-    () => ({ session, isLoading, login, logout }),
-    [session, isLoading, login, logout]
+    () => ({ session, isLoading, login, logout, updateProfile }),
+    [session, isLoading, login, logout, updateProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
