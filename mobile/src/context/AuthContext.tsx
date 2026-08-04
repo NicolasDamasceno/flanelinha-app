@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -42,6 +43,7 @@ function toSession(response: LoginResponse): Session {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const sessionRef = useRef<Session | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem(SESSION_STORAGE_KEY)
@@ -54,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    sessionRef.current = session;
     setCurrentToken(session?.token ?? null);
   }, [session]);
 
@@ -77,14 +80,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = useCallback(
     async (perfil: FiscalPerfil | FlanelinhaPerfil) => {
-      if (!session) {
+      const current = sessionRef.current;
+      if (!current) {
+        // sessão encerrada durante a chamada (ex.: logout no meio de um salvamento) — nada a
+        // atualizar; resolve normalmente em vez de lançar, já que isso não é um erro do chamador.
         return;
       }
-      const nextSession: Session = { ...session, perfil };
+      const nextSession: Session = { ...current, perfil };
+      sessionRef.current = nextSession;
       setSession(nextSession);
       await AsyncStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextSession));
     },
-    [session]
+    []
   );
 
   const value = useMemo(
