@@ -45,29 +45,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const sessionRef = useRef<Session | null>(null);
 
+  const applySession = useCallback((next: Session | null) => {
+    sessionRef.current = next;
+    setCurrentToken(next?.token ?? null);
+    setSession(next);
+  }, []);
+
   useEffect(() => {
     AsyncStorage.getItem(SESSION_STORAGE_KEY)
       .then((raw) => {
         if (raw) {
           const parsed = JSON.parse(raw) as Session;
-          sessionRef.current = parsed;
-          setSession(parsed);
+          applySession(parsed);
         }
       })
       .finally(() => setIsLoading(false));
-  }, []);
-
-  useEffect(() => {
-    sessionRef.current = session;
-    setCurrentToken(session?.token ?? null);
-  }, [session]);
+  }, [applySession]);
 
   const logout = useCallback(async (params?: Record<string, string>) => {
-    sessionRef.current = null;
-    setSession(null);
+    applySession(null);
     await AsyncStorage.removeItem(SESSION_STORAGE_KEY);
     router.replace({ pathname: "/login", params: params ?? {} });
-  }, []);
+  }, [applySession]);
 
   useEffect(() => {
     setUnauthorizedHandler(logout);
@@ -76,11 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (cpf: string, senha: string) => {
     const response = await apiLogin(cpf, senha);
     const newSession = toSession(response);
-    sessionRef.current = newSession;
-    setSession(newSession);
+    applySession(newSession);
     await AsyncStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newSession));
     return response;
-  }, []);
+  }, [applySession]);
 
   const updateProfile = useCallback(
     async (perfil: FiscalPerfil | FlanelinhaPerfil) => {
@@ -91,11 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       const nextSession: Session = { ...current, perfil };
-      sessionRef.current = nextSession;
-      setSession(nextSession);
+      applySession(nextSession);
       await AsyncStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextSession));
     },
-    []
+    [applySession]
   );
 
   const value = useMemo(
