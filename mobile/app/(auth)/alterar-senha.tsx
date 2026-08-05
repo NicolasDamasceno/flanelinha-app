@@ -32,6 +32,11 @@ export default function AlterarSenhaScreen() {
       return;
     }
 
+    if (novaSenha.trim().length < 6) {
+      setErrorMessage("A senha deve ter no mínimo 6 caracteres.");
+      return;
+    }
+
     setErrorMessage(null);
     setIsSubmitting(true);
 

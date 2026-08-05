@@ -83,6 +83,11 @@ export default function FiscalPerfilScreen() {
       return;
     }
 
+    if (novaSenhaValue.length < 6) {
+      setSenhaError("A senha deve ter no mínimo 6 caracteres.");
+      return;
+    }
+
     setSenhaError(null);
     setIsSavingSenha(true);
 
