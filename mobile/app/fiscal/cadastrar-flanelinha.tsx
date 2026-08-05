@@ -1,11 +1,13 @@
-import { router } from "expo-router";
-import { useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import { ScrollView, StyleSheet } from "react-native";
 import { createFlanelinha } from "@/api/flanelinha";
 import { extractErrorMessage } from "@/api/client";
 import { Banner } from "@/components/Banner";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function CadastrarFlanelinhaScreen() {
   const [nome, setNome] = useState("");
@@ -16,12 +18,22 @@ export default function CadastrarFlanelinhaScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // A Drawer mantém esta tela montada ao trocar de aba, então um erro de uma tentativa
+  // anterior ficaria visível indefinidamente sem isso — mesma classe de problema já tratada
+  // nas telas de lista/detalhe/home com useFocusEffect, só que aqui não há fetch, só o banner
+  // pra limpar ao perder o foco.
+  useFocusEffect(
+    useCallback(() => {
+      return () => setErrorMessage(null);
+    }, [])
+  );
+
   async function handleSubmit() {
     const nomeValue = nome.trim();
     const cpfValue = cpf.trim().replace(/\D/g, "");
     const emailValue = email.trim();
     const pontoAtuacaoValue = pontoAtuacao.trim();
-    const telefoneValue = telefone.trim();
+    const telefoneValue = telefone.trim().replace(/\D/g, "");
 
     if (!nomeValue || !cpfValue || !emailValue || !pontoAtuacaoValue || !telefoneValue) {
       setErrorMessage("Preencha todos os campos");
@@ -30,6 +42,11 @@ export default function CadastrarFlanelinhaScreen() {
 
     if (cpfValue.length !== 11) {
       setErrorMessage("CPF inválido");
+      return;
+    }
+
+    if (!EMAIL_PATTERN.test(emailValue)) {
+      setErrorMessage("Email inválido");
       return;
     }
 

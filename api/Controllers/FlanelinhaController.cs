@@ -54,6 +54,11 @@ namespace api.Controllers
         [Authorize(Roles = "Fiscal")]
         public async Task<IActionResult> Create([FromBody] CreateFlanelinhaDto flanelinhaDto, CancellationToken ct)
         {
+            if (await _flanelinhaRepository.GetByCpfAsync(flanelinhaDto.Cpf, ct) != null)
+            {
+                return BadRequest("Já existe um Flanelinha cadastrado com esse CPF.");
+            }
+
             var flanelinha = flanelinhaDto.ToCreateFlanelinhaDto();
             flanelinha.Senha = PasswordHasher.Hash(flanelinha.Senha);
             flanelinha.IdFiscal = AuthenticatedId;

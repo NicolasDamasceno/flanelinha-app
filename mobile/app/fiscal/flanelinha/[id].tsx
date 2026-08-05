@@ -9,6 +9,8 @@ import { Input } from "@/components/Input";
 import { Modal } from "@/components/Modal";
 import { colors } from "@/theme/colors";
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function FlanelinhaDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const flanelId = Number(id);
@@ -56,7 +58,7 @@ export default function FlanelinhaDetailScreen() {
           setNome(data.nome);
           setEmail(data.email);
           setPontoAtuacao(data.pontoAtuacao);
-          setTelefone(data.telefone);
+          setTelefone(data.telefone.replace(/\D/g, ""));
           setAtivo(data.ativo);
         })
         .catch((error) => {
@@ -83,10 +85,15 @@ export default function FlanelinhaDetailScreen() {
     const nomeValue = nome.trim();
     const emailValue = email.trim();
     const pontoAtuacaoValue = pontoAtuacao.trim();
-    const telefoneValue = telefone.trim();
+    const telefoneValue = telefone.trim().replace(/\D/g, "");
 
     if (!nomeValue || !emailValue || !pontoAtuacaoValue || !telefoneValue) {
       setErrorMessage("Preencha todos os campos");
+      return;
+    }
+
+    if (!EMAIL_PATTERN.test(emailValue)) {
+      setErrorMessage("Email inválido");
       return;
     }
 

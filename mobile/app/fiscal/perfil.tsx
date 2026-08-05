@@ -21,15 +21,20 @@ export default function FiscalPerfilScreen() {
 
   const [nome, setNome] = useState(perfil?.nome ?? "");
   const [email, setEmail] = useState(perfil?.email ?? "");
-  const [dadosError, setDadosError] = useState<string | null>(null);
-  const [dadosSuccess, setDadosSuccess] = useState<string | null>(null);
+  // Cada banner é um objeto novo a cada vez que é definido (mesmo com o mesmo texto de antes),
+  // não uma string direta — se fosse string, setar a MESMA mensagem duas vezes seguidas (ex.
+  // tentar salvar com Nome vazio duas vezes) faria o React ignorar o segundo set (valor
+  // "idêntico"), o efeito de auto-esconder abaixo não reiniciaria, e o timer da primeira
+  // tentativa apagaria o banner da segunda sem o usuário ter tido chance de ler.
+  const [dadosError, setDadosError] = useState<{ text: string } | null>(null);
+  const [dadosSuccess, setDadosSuccess] = useState<{ text: string } | null>(null);
   const [isSavingDados, setIsSavingDados] = useState(false);
 
   const [senhaAtual, setSenhaAtual] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
-  const [senhaError, setSenhaError] = useState<string | null>(null);
-  const [senhaSuccess, setSenhaSuccess] = useState<string | null>(null);
+  const [senhaError, setSenhaError] = useState<{ text: string } | null>(null);
+  const [senhaSuccess, setSenhaSuccess] = useState<{ text: string } | null>(null);
   const [isSavingSenha, setIsSavingSenha] = useState(false);
 
   // Cada Banner some sozinho depois de alguns segundos, tanto em caso de sucesso quanto de erro
@@ -68,7 +73,7 @@ export default function FiscalPerfilScreen() {
     const emailValue = email.trim();
 
     if (!nomeValue || !emailValue) {
-      setDadosError("Preencha todos os campos");
+      setDadosError({ text: "Preencha todos os campos" });
       return;
     }
 
@@ -77,7 +82,7 @@ export default function FiscalPerfilScreen() {
 
     try {
       const updated = await updateFiscalPerfil(perfil.idFiscal, { nome: nomeValue, email: emailValue });
-      setDadosSuccess("Dados atualizados com sucesso.");
+      setDadosSuccess({ text: "Dados atualizados com sucesso." });
       try {
         await updateProfile(updated);
       } catch {
@@ -85,7 +90,7 @@ export default function FiscalPerfilScreen() {
         // já gravou — não é um erro do ponto de vista do usuário.
       }
     } catch (error) {
-      setDadosError(extractErrorMessage(error));
+      setDadosError({ text: extractErrorMessage(error) });
     } finally {
       setIsSavingDados(false);
     }
@@ -101,17 +106,17 @@ export default function FiscalPerfilScreen() {
     const confirmarSenhaValue = confirmarSenha.trim();
 
     if (!senhaAtualValue || !novaSenhaValue || !confirmarSenhaValue) {
-      setSenhaError("Preencha todos os campos");
+      setSenhaError({ text: "Preencha todos os campos" });
       return;
     }
 
     if (novaSenhaValue !== confirmarSenhaValue) {
-      setSenhaError("As senhas não coincidem");
+      setSenhaError({ text: "As senhas não coincidem" });
       return;
     }
 
     if (novaSenhaValue.length < 6) {
-      setSenhaError("A senha deve ter no mínimo 6 caracteres.");
+      setSenhaError({ text: "A senha deve ter no mínimo 6 caracteres." });
       return;
     }
 
@@ -123,9 +128,9 @@ export default function FiscalPerfilScreen() {
       setSenhaAtual("");
       setNovaSenha("");
       setConfirmarSenha("");
-      setSenhaSuccess("Senha alterada com sucesso.");
+      setSenhaSuccess({ text: "Senha alterada com sucesso." });
     } catch (error) {
-      setSenhaError(extractErrorMessage(error));
+      setSenhaError({ text: extractErrorMessage(error) });
     } finally {
       setIsSavingSenha(false);
     }
@@ -137,8 +142,8 @@ export default function FiscalPerfilScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
-      {dadosError ? <Banner type="error" message={dadosError} /> : null}
-      {dadosSuccess ? <Banner type="success" message={dadosSuccess} /> : null}
+      {dadosError ? <Banner type="error" message={dadosError.text} /> : null}
+      {dadosSuccess ? <Banner type="success" message={dadosSuccess.text} /> : null}
 
       <Input label="Nome" value={nome} onChangeText={setNome} />
       <Input label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
@@ -146,8 +151,8 @@ export default function FiscalPerfilScreen() {
 
       <Text style={styles.sectionTitle}>Trocar Senha</Text>
 
-      {senhaError ? <Banner type="error" message={senhaError} /> : null}
-      {senhaSuccess ? <Banner type="success" message={senhaSuccess} /> : null}
+      {senhaError ? <Banner type="error" message={senhaError.text} /> : null}
+      {senhaSuccess ? <Banner type="success" message={senhaSuccess.text} /> : null}
 
       <Input label="Senha Atual" value={senhaAtual} onChangeText={setSenhaAtual} secureTextEntry textContentType="password" autoComplete="password" />
       <Input label="Nova Senha" value={novaSenha} onChangeText={setNovaSenha} secureTextEntry textContentType="newPassword" autoComplete="new-password" />

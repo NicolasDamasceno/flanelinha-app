@@ -22,17 +22,20 @@ export default function AlterarSenhaScreen() {
       return;
     }
 
-    if (!novaSenha.trim() || !confirmarSenha.trim()) {
+    const novaSenhaValue = novaSenha.trim();
+    const confirmarSenhaValue = confirmarSenha.trim();
+
+    if (!novaSenhaValue || !confirmarSenhaValue) {
       setErrorMessage("Preencha todos os campos");
       return;
     }
 
-    if (novaSenha !== confirmarSenha) {
+    if (novaSenhaValue !== confirmarSenhaValue) {
       setErrorMessage("As senhas não coincidem");
       return;
     }
 
-    if (novaSenha.trim().length < 6) {
+    if (novaSenhaValue.length < 6) {
       setErrorMessage("A senha deve ter no mínimo 6 caracteres.");
       return;
     }
@@ -44,7 +47,7 @@ export default function AlterarSenhaScreen() {
       // Esta tela só é alcançada a partir do login de um Flanelinha em primeiro acesso
       // (app/(auth)/login.tsx), então session.perfil é sempre um FlanelinhaPerfil aqui.
       const { idFlanel } = session.perfil as FlanelinhaPerfil;
-      await changePassword(idFlanel, novaSenha);
+      await changePassword(idFlanel, novaSenhaValue);
       await logout({ senhaAlterada: "1" });
     } catch (error) {
       setErrorMessage(extractErrorMessage(error));
