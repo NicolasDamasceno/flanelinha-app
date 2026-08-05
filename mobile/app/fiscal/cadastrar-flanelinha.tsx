@@ -39,22 +39,28 @@ export default function CadastrarFlanelinhaScreen() {
         pontoAtuacao: pontoAtuacaoValue,
         telefone: telefoneValue,
       });
+      setNome("");
+      setCpf("");
+      setEmail("");
+      setPontoAtuacao("");
+      setTelefone("");
       router.replace({ pathname: "/fiscal/flanelinhas", params: { cadastroSucesso: "1" } });
     } catch (error) {
       setErrorMessage(extractErrorMessage(error));
+    } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       {errorMessage ? <Banner type="error" message={errorMessage} /> : null}
 
       <Input label="Nome" value={nome} onChangeText={setNome} />
       <Input
         label="CPF"
         value={cpf}
-        onChangeText={setCpf}
+        onChangeText={(text) => setCpf(text.replace(/\D/g, ""))}
         keyboardType="number-pad"
         maxLength={11}
       />
