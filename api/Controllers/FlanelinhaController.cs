@@ -54,6 +54,11 @@ namespace api.Controllers
         [Authorize(Roles = "Fiscal")]
         public async Task<IActionResult> Create([FromBody] CreateFlanelinhaDto flanelinhaDto, CancellationToken ct)
         {
+            if (await _flanelinhaRepository.GetByCpfAsync(flanelinhaDto.Cpf, ct) != null)
+            {
+                return BadRequest("Já existe um Flanelinha cadastrado com esse CPF.");
+            }
+
             var flanelinha = flanelinhaDto.ToCreateFlanelinhaDto();
             flanelinha.Senha = PasswordHasher.Hash(flanelinha.Senha);
             flanelinha.IdFiscal = AuthenticatedId;
@@ -84,6 +89,33 @@ namespace api.Controllers
             await _flanelinhaRepository.SaveChangesAsync(ct);
 
             return NoContent();
+        }
+
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Fiscal")]
+        public async Task<IActionResult> UpdateByFiscal(int id, [FromBody] UpdateFlanelinhaDto dto, CancellationToken ct)
+        {
+            var flanelinha = await _flanelinhaRepository.GetByIdAsync(id, ct);
+
+            if (flanelinha == null)
+            {
+                return NotFound();
+            }
+
+            if (flanelinha.IdFiscal != AuthenticatedId)
+            {
+                return Forbid();
+            }
+
+            flanelinha.Nome = dto.Nome;
+            flanelinha.Email = dto.Email;
+            flanelinha.PontoAtuacao = dto.PontoAtuacao;
+            flanelinha.Telefone = dto.Telefone;
+            flanelinha.Ativo = dto.Ativo!.Value;
+
+            await _flanelinhaRepository.SaveChangesAsync(ct);
+
+            return Ok(flanelinha.ToFlanelinhaDto());
         }
 
         [HttpPut("{id}/perfil")]
