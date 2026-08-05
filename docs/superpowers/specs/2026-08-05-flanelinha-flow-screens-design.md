@@ -5,7 +5,7 @@
 Este é o quarto e último sub-projeto da camada de frontend mobile (auth backend → scaffold +
 design system + navegação → fluxo Fiscal → **fluxo Flanelinha**). O terceiro sub-projeto
 (`2026-08-03-fiscal-flow-screens-design.md`, já mergeado em `main`) entregou as telas do Fiscal.
-As três rotas do Flanelinha (`flanelinha/home.tsx`, `flanelinha/solicitar-carteirinha.tsx`) ainda
+As duas rotas do Flanelinha (`flanelinha/home.tsx`, `flanelinha/solicitar-carteirinha.tsx`) ainda
 são placeholders com "Em construção", e não existe tela de "Atualizar Dados" para esse perfil
 (diferente do Fiscal, que já tem a sua). Este sub-projeto substitui os placeholders pelas telas
 reais e adiciona a terceira tela.
@@ -93,6 +93,8 @@ mobile/
       qrcode.ts                       # Novo — encoding puro JS (matriz de módulos)
     components/
       QrCode.tsx                      # Novo — renderiza a matriz como grade de Views
+    theme/
+      colors.ts                       # Modificado — novo par warning/warningBackground (seção 3)
 ```
 
 `src/api/flanelinha.ts` — duas funções novas, ao lado das já existentes (`listFlanelinhas`,
@@ -194,23 +196,38 @@ const items: DrawerMenuItem[] = [
 <Drawer.Screen name="atualizar-dados" options={{ title: "Atualizar Dados" }} />
 ```
 
-(mesmo padrão do `fiscal/_layout.tsx`, três `<Drawer.Screen>` explícitas com `title`.)
+(mesmo padrão do `fiscal/_layout.tsx`, que também declara cada rota como `<Drawer.Screen>`
+explícita com `title`.)
 
 `src/types/flanelinha.ts` **não muda** — `FlanelinhaDto` e `CarterinhaDto` já têm todos os campos
 que as telas deste sub-projeto precisam (herdados do sub-projeto 3).
 
 ## 3. Telas
 
-Layout visual de todas as telas abaixo confirmado via companion visual (mockups com os tokens de
-`src/theme/colors.ts` já existentes — nenhuma cor nova).
+Layout visual de todas as telas abaixo confirmado via companion visual. `src/theme/colors.ts` hoje
+não tem um par `warning`/`warningBackground` (só `error`/`errorBackground` e
+`success`/`successBackground`) — necessário para a caixa de aviso da seção 3.2. Duas linhas novas
+em `src/theme/colors.ts`, seguindo o mesmo padrão dos pares já existentes:
+
+```typescript
+warning: "#92400E",
+warningBackground: "#FEF3C7",
+```
+
+Fora isso, todas as telas reaproveitam os tokens já existentes — nenhuma outra cor nova.
 
 ### 3.1 Home / Carteira Digital (`flanelinha/home.tsx`)
 
 Chama `getMyFlanelinha()` sempre que a tela ganha foco (`useFocusEffect` + guarda `cancelled`,
 mesmo mecanismo de `fiscal/flanelinhas.tsx`). Entre os itens de `carterinhas` retornados, seleciona
-o de maior `dataEmissao` como "carteira atual" (mesma lógica do backend em `RequestCarteira` —
-`OrderByDescending(c => c.DataEmissao).FirstOrDefault()` — replicada no cliente porque o endpoint
-`/me` retorna a lista completa, não um campo "carteira atual" separado).
+o de maior `dataEmissao` como "carteira atual" — inspirado na lógica do backend em `RequestCarteira`
+(`.Where(c => c.Ativo).OrderByDescending(c => c.DataEmissao).FirstOrDefault()`), replicada no
+cliente porque o endpoint `/me` retorna a lista completa, não um campo "carteira atual" separado.
+O cliente **não** reproduz o filtro `Where(Ativo)`: toda vez que uma carteira nova é emitida, a
+anterior é marcada `Ativo = false` no mesmo request (`RequestCarteira`, `carteiraAtiva.Ativo =
+false`), então a carteira de maior `DataEmissao` e a única com `Ativo == true` são sempre a mesma —
+usar só `DataEmissao` no cliente é suficiente e evita expor mais um campo (`ativo` da carteira, que
+não é usado por nenhuma tela) só para chegar no mesmo resultado.
 
 Três estados de renderização, decididos a partir da carteira atual:
 
