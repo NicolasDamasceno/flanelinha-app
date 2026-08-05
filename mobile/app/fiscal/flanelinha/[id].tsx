@@ -13,7 +13,7 @@ export default function FlanelinhaDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const flanelId = Number(id);
   const navigation = useNavigation();
-  const activeIdRef = useRef(flanelId);
+  const activeIdRef = useRef<number | null>(flanelId);
 
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -46,6 +46,7 @@ export default function FlanelinhaDetailScreen() {
       setIsLoading(true);
       setLoadError(null);
       setErrorMessage(null);
+      navigation.setOptions({ title: "Flanelinha" });
 
       getFlanelinha(flanelId)
         .then((data) => {
@@ -67,10 +68,17 @@ export default function FlanelinhaDetailScreen() {
 
       return () => {
         cancelled = true;
+        activeIdRef.current = null;
       };
     }, [flanelId, navigation])
   );
 
+  // handleSave guards against the user navigating away entirely (or to a different record)
+  // while the save is still in flight — activeIdRef.current is nulled on blur and updated to
+  // the focused record's id on focus, so a stale response can't act on a screen the user has
+  // since left. handleConfirmDelete doesn't need this: the confirmation Modal blocks all
+  // navigation away for the full duration of a delete request (see its onClose/Cancelar
+  // handling below), so there's no window where the user could be looking at something else.
   async function handleSave() {
     const nomeValue = nome.trim();
     const emailValue = email.trim();
