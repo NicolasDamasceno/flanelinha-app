@@ -42,6 +42,7 @@ export default function FlanelinhaDetailScreen() {
       let cancelled = false;
       setIsLoading(true);
       setLoadError(null);
+      setErrorMessage(null);
 
       getFlanelinha(flanelId)
         .then((data) => {
@@ -153,10 +154,22 @@ export default function FlanelinhaDetailScreen() {
       <Modal
         visible={isModalVisible}
         title="Excluir Flanelinha"
-        onClose={() => { setIsModalVisible(false); setDeleteError(null); }}
+        onClose={() => {
+          if (isDeleting) return;
+          setIsModalVisible(false);
+          setDeleteError(null);
+        }}
         actions={
           <>
-            <Button label="Cancelar" variant="secondary" onPress={() => { setIsModalVisible(false); setDeleteError(null); }} />
+            <Button
+              label="Cancelar"
+              variant="secondary"
+              disabled={isDeleting}
+              onPress={() => {
+                setIsModalVisible(false);
+                setDeleteError(null);
+              }}
+            />
             <Button label="Excluir" onPress={handleConfirmDelete} loading={isDeleting} />
           </>
         }
