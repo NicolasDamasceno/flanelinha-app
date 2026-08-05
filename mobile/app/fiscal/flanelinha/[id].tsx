@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams, useNavigation } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { deleteFlanelinha, getFlanelinha, updateFlanelinha } from "@/api/flanelinha";
 import { extractErrorMessage } from "@/api/client";
@@ -13,6 +13,7 @@ export default function FlanelinhaDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const flanelId = Number(id);
   const navigation = useNavigation();
+  const activeIdRef = useRef(flanelId);
 
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -38,6 +39,8 @@ export default function FlanelinhaDetailScreen() {
         setIsLoading(false);
         return;
       }
+
+      activeIdRef.current = flanelId;
 
       let cancelled = false;
       setIsLoading(true);
@@ -82,16 +85,20 @@ export default function FlanelinhaDetailScreen() {
     setErrorMessage(null);
     setIsSaving(true);
 
+    const targetId = flanelId;
+
     try {
-      await updateFlanelinha(flanelId, {
+      await updateFlanelinha(targetId, {
         nome: nomeValue,
         email: emailValue,
         pontoAtuacao: pontoAtuacaoValue,
         telefone: telefoneValue,
         ativo,
       });
+      if (activeIdRef.current !== targetId) return;
       router.replace({ pathname: "/fiscal/flanelinhas", params: { edicaoSucesso: "1" } });
     } catch (error) {
+      if (activeIdRef.current !== targetId) return;
       setErrorMessage(extractErrorMessage(error));
     } finally {
       setIsSaving(false);
