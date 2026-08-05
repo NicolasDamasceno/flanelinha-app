@@ -28,6 +28,11 @@ export default function CadastrarFlanelinhaScreen() {
       return;
     }
 
+    if (cpfValue.length !== 11) {
+      setErrorMessage("CPF inválido");
+      return;
+    }
+
     setErrorMessage(null);
     setIsSubmitting(true);
 
@@ -53,16 +58,16 @@ export default function CadastrarFlanelinhaScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       {errorMessage ? <Banner type="error" message={errorMessage} /> : null}
 
       <Input label="Nome" value={nome} onChangeText={setNome} />
       <Input
         label="CPF"
         value={cpf}
-        onChangeText={(text) => setCpf(text.replace(/\D/g, ""))}
+        onChangeText={(text) => setCpf(text.replace(/\D/g, "").slice(0, 11))}
         keyboardType="number-pad"
-        maxLength={11}
+        maxLength={14}
       />
       <Input label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
       <Input label="Ponto de Atuação" value={pontoAtuacao} onChangeText={setPontoAtuacao} />
