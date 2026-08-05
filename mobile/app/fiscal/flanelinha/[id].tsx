@@ -154,7 +154,12 @@ export default function FlanelinhaDetailScreen() {
       <Input label="Nome" value={nome} onChangeText={setNome} />
       <Input label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
       <Input label="Ponto de Atuação" value={pontoAtuacao} onChangeText={setPontoAtuacao} />
-      <Input label="Telefone" value={telefone} onChangeText={setTelefone} keyboardType="phone-pad" />
+      <Input
+        label="Telefone"
+        value={telefone}
+        onChangeText={(text) => setTelefone(text.replace(/\D/g, "").slice(0, 11))}
+        keyboardType="phone-pad"
+      />
 
       <View style={styles.toggleRow}>
         <Text style={styles.toggleLabel}>Ativo</Text>

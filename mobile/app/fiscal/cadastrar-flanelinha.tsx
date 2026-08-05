@@ -70,7 +70,12 @@ export default function CadastrarFlanelinhaScreen() {
       />
       <Input label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
       <Input label="Ponto de Atuação" value={pontoAtuacao} onChangeText={setPontoAtuacao} />
-      <Input label="Telefone" value={telefone} onChangeText={setTelefone} keyboardType="phone-pad" />
+      <Input
+        label="Telefone"
+        value={telefone}
+        onChangeText={(text) => setTelefone(text.replace(/\D/g, "").slice(0, 11))}
+        keyboardType="phone-pad"
+      />
 
       <Button label="Cadastrar" onPress={handleSubmit} loading={isSubmitting} />
     </ScrollView>
