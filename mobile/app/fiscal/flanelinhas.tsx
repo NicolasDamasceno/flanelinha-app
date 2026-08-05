@@ -13,26 +13,33 @@ const SUCCESS_MESSAGES: Record<string, string> = {
   exclusaoSucesso: "Flanelinha excluído com sucesso.",
 };
 
+type SuccessParams = {
+  cadastroSucesso?: string;
+  edicaoSucesso?: string;
+  exclusaoSucesso?: string;
+};
+
 export default function FlanelinhasScreen() {
-  const navigation = useNavigation();
-  const params = useLocalSearchParams<{
-    cadastroSucesso?: string;
-    edicaoSucesso?: string;
-    exclusaoSucesso?: string;
-  }>();
+  const navigation = useNavigation<{ setParams: (params: SuccessParams) => void }>();
+  const params = useLocalSearchParams<SuccessParams>();
 
   const [flanelinhas, setFlanelinhas] = useState<FlanelinhaDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Drawer keeps this screen mounted, so the banner must be cleared on blur (below) AND the
+  // route param cleared here — the param clearing is what lets a *second* create re-fire this
+  // effect, the blur clearing is what stops a stale banner reappearing on back-navigation or a
+  // drawer round-trip. Deps are the three scalar param values, not `params` itself, since
+  // useLocalSearchParams() returns a new object on every render.
   useEffect(() => {
     const key = (["cadastroSucesso", "edicaoSucesso", "exclusaoSucesso"] as const).find(
       (k) => params[k] === "1"
     );
     if (key) {
       setSuccessMessage(SUCCESS_MESSAGES[key]);
-      navigation.setParams({ [key]: undefined } as any);
+      navigation.setParams({ [key]: undefined });
     }
   }, [params.cadastroSucesso, params.edicaoSucesso, params.exclusaoSucesso]);
 
