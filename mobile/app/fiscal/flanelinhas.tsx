@@ -1,4 +1,4 @@
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams, useNavigation } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { listFlanelinhas } from "@/api/flanelinha";
@@ -14,6 +14,7 @@ const SUCCESS_MESSAGES: Record<string, string> = {
 };
 
 export default function FlanelinhasScreen() {
+  const navigation = useNavigation();
   const params = useLocalSearchParams<{
     cadastroSucesso?: string;
     edicaoSucesso?: string;
@@ -31,9 +32,9 @@ export default function FlanelinhasScreen() {
     );
     if (key) {
       setSuccessMessage(SUCCESS_MESSAGES[key]);
-      router.setParams({ [key]: undefined });
+      navigation.setParams({ [key]: undefined } as any);
     }
-  }, [params]);
+  }, [params.cadastroSucesso, params.edicaoSucesso, params.exclusaoSucesso]);
 
   useFocusEffect(
     useCallback(() => {
@@ -54,6 +55,7 @@ export default function FlanelinhasScreen() {
 
       return () => {
         cancelled = true;
+        setSuccessMessage(null);
       };
     }, [])
   );
