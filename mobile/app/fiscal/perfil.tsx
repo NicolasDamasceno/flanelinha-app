@@ -50,8 +50,13 @@ export default function FiscalPerfilScreen() {
 
     try {
       const updated = await updateFiscalPerfil(perfil.idFiscal, { nome: nomeValue, email: emailValue });
-      await updateProfile(updated);
       setDadosSuccess("Dados atualizados com sucesso.");
+      try {
+        await updateProfile(updated);
+      } catch {
+        // Persistência local da sessão falhou; a sessão em memória já foi atualizada e o backend
+        // já gravou — não é um erro do ponto de vista do usuário.
+      }
     } catch (error) {
       setDadosError(extractErrorMessage(error));
     } finally {
@@ -99,7 +104,7 @@ export default function FiscalPerfilScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       {dadosError ? <Banner type="error" message={dadosError} /> : null}
       {dadosSuccess ? <Banner type="success" message={dadosSuccess} /> : null}
 
@@ -112,9 +117,9 @@ export default function FiscalPerfilScreen() {
       {senhaError ? <Banner type="error" message={senhaError} /> : null}
       {senhaSuccess ? <Banner type="success" message={senhaSuccess} /> : null}
 
-      <Input label="Senha Atual" value={senhaAtual} onChangeText={setSenhaAtual} secureTextEntry />
-      <Input label="Nova Senha" value={novaSenha} onChangeText={setNovaSenha} secureTextEntry />
-      <Input label="Confirmar Nova Senha" value={confirmarSenha} onChangeText={setConfirmarSenha} secureTextEntry />
+      <Input label="Senha Atual" value={senhaAtual} onChangeText={setSenhaAtual} secureTextEntry textContentType="password" autoComplete="password" />
+      <Input label="Nova Senha" value={novaSenha} onChangeText={setNovaSenha} secureTextEntry textContentType="newPassword" autoComplete="new-password" />
+      <Input label="Confirmar Nova Senha" value={confirmarSenha} onChangeText={setConfirmarSenha} secureTextEntry textContentType="newPassword" autoComplete="new-password" />
       <Button label="Trocar Senha" onPress={handleChangePassword} loading={isSavingSenha} />
     </ScrollView>
   );
