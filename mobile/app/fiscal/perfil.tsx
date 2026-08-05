@@ -9,6 +9,8 @@ import { useAuth } from "@/context/AuthContext";
 import { colors } from "@/theme/colors";
 import type { FiscalPerfil } from "@/types/auth";
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function FiscalPerfilScreen() {
   const { session, updateProfile } = useAuth();
   // Optional, not cast to a definite FiscalPerfil: this screen stays mounted while the Drawer is
@@ -74,6 +76,11 @@ export default function FiscalPerfilScreen() {
 
     if (!nomeValue || !emailValue) {
       setDadosError({ text: "Preencha todos os campos" });
+      return;
+    }
+
+    if (!EMAIL_PATTERN.test(emailValue)) {
+      setDadosError({ text: "Email inválido" });
       return;
     }
 
