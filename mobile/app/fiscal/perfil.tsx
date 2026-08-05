@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text } from "react-native";
 import { changeFiscalPassword, updateFiscalPerfil } from "@/api/fiscal";
 import { extractErrorMessage } from "@/api/client";
@@ -31,6 +31,33 @@ export default function FiscalPerfilScreen() {
   const [senhaError, setSenhaError] = useState<string | null>(null);
   const [senhaSuccess, setSenhaSuccess] = useState<string | null>(null);
   const [isSavingSenha, setIsSavingSenha] = useState(false);
+
+  // Cada Banner some sozinho depois de alguns segundos, tanto em caso de sucesso quanto de erro
+  // — esta tela nunca navega pra outro lugar (ao contrário de Cadastrar/Editar Flanelinha), então
+  // sem isso a mensagem ficaria na tela indefinidamente.
+  useEffect(() => {
+    if (!dadosError) return;
+    const timer = setTimeout(() => setDadosError(null), 3000);
+    return () => clearTimeout(timer);
+  }, [dadosError]);
+
+  useEffect(() => {
+    if (!dadosSuccess) return;
+    const timer = setTimeout(() => setDadosSuccess(null), 3000);
+    return () => clearTimeout(timer);
+  }, [dadosSuccess]);
+
+  useEffect(() => {
+    if (!senhaError) return;
+    const timer = setTimeout(() => setSenhaError(null), 3000);
+    return () => clearTimeout(timer);
+  }, [senhaError]);
+
+  useEffect(() => {
+    if (!senhaSuccess) return;
+    const timer = setTimeout(() => setSenhaSuccess(null), 3000);
+    return () => clearTimeout(timer);
+  }, [senhaSuccess]);
 
   async function handleSaveDados() {
     if (!perfil) return;
