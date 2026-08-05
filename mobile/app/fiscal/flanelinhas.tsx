@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { listFlanelinhas } from "@/api/flanelinha";
 import { extractErrorMessage } from "@/api/client";
@@ -23,11 +23,17 @@ export default function FlanelinhasScreen() {
   const [flanelinhas, setFlanelinhas] = useState<FlanelinhaDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const successKey = (["cadastroSucesso", "edicaoSucesso", "exclusaoSucesso"] as const).find(
-    (key) => params[key] === "1"
-  );
-  const successMessage = successKey ? SUCCESS_MESSAGES[successKey] : null;
+  useEffect(() => {
+    const key = (["cadastroSucesso", "edicaoSucesso", "exclusaoSucesso"] as const).find(
+      (k) => params[k] === "1"
+    );
+    if (key) {
+      setSuccessMessage(SUCCESS_MESSAGES[key]);
+      router.setParams({ [key]: undefined });
+    }
+  }, [params]);
 
   useFocusEffect(
     useCallback(() => {
