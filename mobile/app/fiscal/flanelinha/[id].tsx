@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams, useNavigation } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams, useNavigation } from "expo-router";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { deleteFlanelinha, getFlanelinha, updateFlanelinha } from "@/api/flanelinha";
 import { extractErrorMessage } from "@/api/client";
@@ -31,27 +31,41 @@ export default function FlanelinhaDetailScreen() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const loadFlanelinha = useCallback(() => {
-    setIsLoading(true);
-    setLoadError(null);
+  useFocusEffect(
+    useCallback(() => {
+      if (!Number.isInteger(flanelId) || flanelId <= 0) {
+        setLoadError("Flanelinha inválido.");
+        setIsLoading(false);
+        return;
+      }
 
-    getFlanelinha(flanelId)
-      .then((data) => {
-        navigation.setOptions({ title: data.nome });
-        setCpf(data.cpf);
-        setNome(data.nome);
-        setEmail(data.email);
-        setPontoAtuacao(data.pontoAtuacao);
-        setTelefone(data.telefone);
-        setAtivo(data.ativo);
-      })
-      .catch((error) => setLoadError(extractErrorMessage(error)))
-      .finally(() => setIsLoading(false));
-  }, [flanelId, navigation]);
+      let cancelled = false;
+      setIsLoading(true);
+      setLoadError(null);
 
-  useEffect(() => {
-    loadFlanelinha();
-  }, [loadFlanelinha]);
+      getFlanelinha(flanelId)
+        .then((data) => {
+          if (cancelled) return;
+          navigation.setOptions({ title: data.nome });
+          setCpf(data.cpf);
+          setNome(data.nome);
+          setEmail(data.email);
+          setPontoAtuacao(data.pontoAtuacao);
+          setTelefone(data.telefone);
+          setAtivo(data.ativo);
+        })
+        .catch((error) => {
+          if (!cancelled) setLoadError(extractErrorMessage(error));
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoading(false);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [flanelId, navigation])
+  );
 
   async function handleSave() {
     const nomeValue = nome.trim();
@@ -78,6 +92,7 @@ export default function FlanelinhaDetailScreen() {
       router.replace({ pathname: "/fiscal/flanelinhas", params: { edicaoSucesso: "1" } });
     } catch (error) {
       setErrorMessage(extractErrorMessage(error));
+    } finally {
       setIsSaving(false);
     }
   }
@@ -88,9 +103,11 @@ export default function FlanelinhaDetailScreen() {
 
     try {
       await deleteFlanelinha(flanelId);
+      setIsModalVisible(false);
       router.replace({ pathname: "/fiscal/flanelinhas", params: { exclusaoSucesso: "1" } });
     } catch (error) {
       setDeleteError(extractErrorMessage(error));
+    } finally {
       setIsDeleting(false);
     }
   }
@@ -112,7 +129,7 @@ export default function FlanelinhaDetailScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       {errorMessage ? <Banner type="error" message={errorMessage} /> : null}
 
       <Text style={styles.readonlyLabel}>CPF</Text>
@@ -128,18 +145,18 @@ export default function FlanelinhaDetailScreen() {
         <Switch value={ativo} onValueChange={setAtivo} trackColor={{ true: colors.success }} />
       </View>
 
-      <Button label="Salvar Alterações" onPress={handleSave} loading={isSaving} />
+      <Button label="Salvar Alterações" onPress={handleSave} loading={isSaving} disabled={isDeleting} />
       <View style={styles.deleteButtonSpacing}>
-        <Button label="Excluir Flanelinha" variant="secondary" onPress={() => setIsModalVisible(true)} />
+        <Button label="Excluir Flanelinha" variant="secondary" onPress={() => setIsModalVisible(true)} disabled={isSaving} />
       </View>
 
       <Modal
         visible={isModalVisible}
         title="Excluir Flanelinha"
-        onClose={() => setIsModalVisible(false)}
+        onClose={() => { setIsModalVisible(false); setDeleteError(null); }}
         actions={
           <>
-            <Button label="Cancelar" variant="secondary" onPress={() => setIsModalVisible(false)} />
+            <Button label="Cancelar" variant="secondary" onPress={() => { setIsModalVisible(false); setDeleteError(null); }} />
             <Button label="Excluir" onPress={handleConfirmDelete} loading={isDeleting} />
           </>
         }

@@ -15,6 +15,7 @@ export default function FiscalLayout() {
       <Drawer.Screen name="cadastrar-flanelinha" options={{ title: "Cadastrar Flanelinha" }} />
       <Drawer.Screen name="flanelinhas" options={{ title: "Flanelinhas" }} />
       <Drawer.Screen name="perfil" options={{ title: "Meus Dados" }} />
+      <Drawer.Screen name="flanelinha/[id]" options={{ title: "Flanelinha" }} />
     </Drawer>
   );
 }
