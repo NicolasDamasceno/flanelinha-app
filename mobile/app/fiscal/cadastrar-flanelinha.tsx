@@ -67,7 +67,6 @@ export default function CadastrarFlanelinhaScreen() {
         value={cpf}
         onChangeText={(text) => setCpf(text.replace(/\D/g, "").slice(0, 11))}
         keyboardType="number-pad"
-        maxLength={14}
       />
       <Input label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
       <Input label="Ponto de Atuação" value={pontoAtuacao} onChangeText={setPontoAtuacao} />
