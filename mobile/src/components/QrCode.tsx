@@ -1,4 +1,5 @@
-import { View } from "react-native";
+import { useMemo } from "react";
+import { StyleSheet, View } from "react-native";
 import { getQrMatrix } from "@/utils/qrcode";
 import { colors } from "@/theme/colors";
 
@@ -8,13 +9,18 @@ interface QrCodeProps {
 }
 
 export function QrCode({ value, size }: QrCodeProps) {
-  const matrix = getQrMatrix(value);
+  const matrix = useMemo(() => getQrMatrix(value), [value]);
   const moduleSize = size / matrix.length;
 
   return (
-    <View style={{ width: size, height: size, backgroundColor: colors.background }}>
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={`Código QR ${value}`}
+      style={[styles.container, { width: size, height: size }]}
+    >
       {matrix.map((row, rowIndex) => (
-        <View key={rowIndex} style={{ flexDirection: "row" }}>
+        <View key={rowIndex} style={styles.row}>
           {row.map((isDark, colIndex) => (
             <View
               key={colIndex}
@@ -30,3 +36,12 @@ export function QrCode({ value, size }: QrCodeProps) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: colors.background,
+  },
+  row: {
+    flexDirection: "row",
+  },
+});
