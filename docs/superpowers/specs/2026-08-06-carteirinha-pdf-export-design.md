@@ -44,7 +44,7 @@ próprio cartão digital) — não faz sentido entregar a foto sem nenhum lugar 
     — não no backend. Gerar no backend duplicaria a lógica de desenho do QR code (que já existe no
     cliente, `src/utils/qrcode.ts`) e exigiria manter dois templates visuais sincronizados.
 11. **Layout do PDF**: confirmado via companion visual — cartão vertical (Layout A), tamanho padrão
-    de cartão de identificação, centralizado numa página A4 pra imprimir e recortar. Ver seção 3.2.
+    de cartão de identificação, centralizado numa página A4 pra imprimir e recortar. Ver seção 4.
 12. **Verificação**: sem framework de testes automatizados (mesma convenção dos sub-projetos
     anteriores) — verificação manual contra o backend real, depois do rebuild do dev client.
 
@@ -116,8 +116,20 @@ public async Task<List<FlanelinhaDto>> GetAllByFiscalWithCarterinhasAsync(int id
 Isso muda a assinatura do método de `Task<List<Flanelinha>>` pra `Task<List<FlanelinhaDto>>` (e a
 interface `IFlanelinhaRepository` correspondente) — o controller (`GetAll` em
 `FlanelinhaController.cs`) deixa de chamar `.Select(f => f.ToFlanelinhaDto())` em cima do resultado,
-já que o repositório agora devolve DTOs prontos. `GetByIdWithCarterinhasAsync` e `GetMe` continuam
-carregando a entidade completa (incluindo `FotoBase64`) normalmente — só a query da lista muda.
+já que o repositório agora devolve DTOs prontos:
+
+```csharp
+[HttpGet]
+[Authorize(Roles = "Fiscal")]
+public async Task<IActionResult> GetAll(CancellationToken ct)
+{
+    var flanelinhas = await _flanelinhaRepository.GetAllByFiscalWithCarterinhasAsync(AuthenticatedId, ct);
+    return Ok(flanelinhas);
+}
+```
+
+`GetByIdWithCarterinhasAsync` e `GetMe` continuam carregando a entidade completa (incluindo
+`FotoBase64`) normalmente — só a query da lista muda.
 
 Sem alteração no `Program.cs`/Kestrel: o payload de uma foto comprimida no cliente (seção 2, ~480×480
 JPEG qualidade ~60%) fica bem abaixo do limite padrão de tamanho de requisição do Kestrel, então não
@@ -182,7 +194,7 @@ mobile/
 
 ```typescript
 import * as ImagePicker from "expo-image-picker";
-import * as ImageManipulator from "expo-image-manipulator";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 
 export type PhotoSource = "camera" | "gallery";
 
@@ -209,11 +221,23 @@ export async function pickAndCompressPhoto(source: PhotoSource): Promise<string 
     return null;
   }
 
-  const manipulated = await ImageManipulator.manipulateAsync(
-    result.assets[0].uri,
-    [{ resize: { width: 480, height: 480 } }],
-    { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-  );
+  // manipulateAsync (a função solta, pré-SDK 52) está deprecated no expo-image-manipulator
+  // instalado (57.0.8) em favor desta API encadeável — ainda funcionaria, mas usar a atual evita
+  // um aviso de depreciação logo na primeira versão deste código.
+  //
+  // resize() só preserva a proporção da imagem quando recebe UMA dimensão (a outra é calculada
+  // automaticamente) — passar width e height juntos força esse tamanho exato e distorce fotos que
+  // não são quadradas. Por isso só a maior dimensão da foto original é restringida a 480px.
+  const asset = result.assets[0];
+  const resizeOptions = asset.width >= asset.height ? { width: 480 } : { height: 480 };
+
+  const context = ImageManipulator.manipulate(asset.uri);
+  const renderedImage = await context.resize(resizeOptions).renderAsync();
+  const manipulated = await renderedImage.saveAsync({
+    base64: true,
+    compress: 0.6,
+    format: SaveFormat.JPEG,
+  });
 
   if (!manipulated.base64) {
     throw new Error("Não foi possível processar a foto. Tente novamente.");
@@ -223,9 +247,8 @@ export async function pickAndCompressPhoto(source: PhotoSource): Promise<string 
 }
 ```
 
-`resize: { width: 480, height: 480 }` no `expo-image-manipulator` redimensiona proporcionalmente
-até a maior dimensão caber em 480px (não distorce nem força quadrado) — suficiente pra manter o
-arquivo pequeno sem cortar a foto.
+Passar só a maior dimensão da foto original (largura ou altura, o que for maior) mantém a proporção
+original — suficiente pra manter o arquivo pequeno sem distorcer nem cortar a foto.
 
 ### 3.2 `src/components/PhotoPicker.tsx`
 
@@ -385,9 +408,12 @@ Dois acréscimos ao estado dessa tela, junto ao que a Task 6 do sub-projeto 4 j�
 - `<Avatar base64={fotoBase64} size={72} />` no topo do cartão, acima do nome — mesma composição do
   Layout A aprovado no companion visual.
 - Um botão "Exportar PDF" logo abaixo do cartão, ao lado (ou no lugar, quando vencida) do botão de
-  Solicitar Renovação — desabilitado quando `!carteiraAtual` (decisão: sem carteira, nada pra
-  exportar), habilitado nos dois outros estados (ativa ou vencida — mesmo um card vencido pode ser
-  útil de ter impresso, por exemplo enquanto aguarda a renovação).
+  Solicitar Renovação. `home.tsx` já tem um retorno antecipado inteiramente separado pro estado sem
+  carteira (`if (!carteiraAtual) { ... }`, seção 3.1 do sub-projeto 4) — não existe cartão nem rodapé
+  nesse branch pra um botão desabilitado morar. Por isso o botão não é "desabilitado quando sem
+  carteira": ele simplesmente só existe nos dois branches que já renderizam o cartão (ativa e
+  vencida) — mesmo um card vencido pode ser útil de ter impresso, por exemplo enquanto aguarda a
+  renovação. O estado vazio continua exatamente como está hoje, sem nenhum botão de exportar.
 
 ## 4. Geração do PDF (`src/utils/pdf.ts`)
 
@@ -469,9 +495,14 @@ function buildCardHtml(data: CarteiraPdfData): string {
   `;
 }
 
+// A4 a 72 PPI (o padrão do expo-print, sem PPI configurável) — 210×297mm ≈ 595×842px. Sem isso,
+// printToFileAsync usa o tamanho padrão da lib (US Letter, 612×792), não A4 (decisão 11).
+const A4_WIDTH_PX = 595;
+const A4_HEIGHT_PX = 842;
+
 export async function exportCarteiraPdf(data: CarteiraPdfData): Promise<void> {
   const html = buildCardHtml(data);
-  const { uri } = await Print.printToFileAsync({ html });
+  const { uri } = await Print.printToFileAsync({ html, width: A4_WIDTH_PX, height: A4_HEIGHT_PX });
 
   const canShare = await Sharing.isAvailableAsync();
   if (canShare) {
@@ -509,7 +540,7 @@ real:
 - Exportar PDF com foto e carteira ativa → PDF abre corretamente via o menu de compartilhar, todos
   os campos corretos (incluindo CPF), QR code escaneia pro número certo.
 - Exportar PDF sem foto → placeholder aparece no PDF, nada quebra.
-- Exportar PDF sem carteira → botão desabilitado.
+- Exportar PDF sem carteira → botão não aparece na tela (estado vazio, sem cartão).
 - Exportar PDF com carteira vencida → botão habilitado, PDF gerado normalmente.
 
 ## Fora de escopo
