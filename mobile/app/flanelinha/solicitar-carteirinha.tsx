@@ -9,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { colors } from "@/theme/colors";
 import type { FlanelinhaPerfil } from "@/types/auth";
 import type { CarterinhaDto } from "@/types/flanelinha";
-import { formatDate, getCarteiraAtual, isCarteiraVencida } from "@/utils/carteira";
+import { formatDate, formatNumeroCarteira, getCarteiraAtual, isCarteiraVencida } from "@/utils/carteira";
 
 export default function SolicitarCarteirinhaScreen() {
   const { session } = useAuth();
@@ -55,9 +55,19 @@ export default function SolicitarCarteirinhaScreen() {
 
     try {
       await requestCarteira(idFlanel);
-      router.replace("/flanelinha/home");
+      router.replace({ pathname: "/flanelinha/home", params: { carteiraEmitida: "1" } });
     } catch (error) {
       setRequestError(extractErrorMessage(error));
+      // Re-sincroniza com o servidor: um 400 aqui significa que nosso status em cache estava
+      // desatualizado (corrida entre o fetch inicial e uma ação em outro dispositivo/aba). Falha
+      // nesse re-fetch não é crítica — o Banner de erro da tentativa original já está visível, e
+      // o próximo foco da tela tenta buscar de novo normalmente.
+      try {
+        const data = await getMyFlanelinha();
+        setCarteiraAtual(getCarteiraAtual(data.carterinhas));
+      } catch {
+        // Ignorado — ver comentário acima.
+      }
     } finally {
       setIsRequesting(false);
     }
@@ -85,15 +95,13 @@ export default function SolicitarCarteirinhaScreen() {
     <View style={styles.container}>
       {requestError ? <Banner type="error" message={requestError} /> : null}
 
-      {bloqueado && carteiraAtual ? (
+      {bloqueado ? (
         <>
           <Text style={styles.label}>Sua carteirinha atual:</Text>
           <View style={styles.summaryCard}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Número</Text>
-              <Text style={styles.summaryValue}>
-                #{String(carteiraAtual.numeroCarterinha).padStart(6, "0")}
-              </Text>
+              <Text style={styles.summaryValue}>{formatNumeroCarteira(carteiraAtual.numeroCarterinha)}</Text>
             </View>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Validade</Text>

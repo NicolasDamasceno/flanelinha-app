@@ -1,5 +1,5 @@
-import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams, useNavigation } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { getMyFlanelinha } from "@/api/flanelinha";
 import { extractErrorMessage } from "@/api/client";
@@ -8,13 +8,26 @@ import { Button } from "@/components/Button";
 import { QrCode } from "@/components/QrCode";
 import { colors } from "@/theme/colors";
 import type { CarterinhaDto } from "@/types/flanelinha";
-import { formatDate, getCarteiraAtual, isCarteiraVencida } from "@/utils/carteira";
+import { formatDate, formatNumeroCarteira, getCarteiraAtual, isCarteiraVencida } from "@/utils/carteira";
+
+type SuccessParams = { carteiraEmitida?: string };
 
 export default function FlanelinhaHomeScreen() {
+  const navigation = useNavigation<{ setParams: (params: SuccessParams) => void }>();
+  const params = useLocalSearchParams<SuccessParams>();
+
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pontoAtuacao, setPontoAtuacao] = useState("");
   const [carteiraAtual, setCarteiraAtual] = useState<CarterinhaDto | null>(null);
+
+  useEffect(() => {
+    if (params.carteiraEmitida === "1") {
+      setSuccessMessage("Carteirinha emitida com sucesso.");
+      navigation.setParams({ carteiraEmitida: undefined });
+    }
+  }, [params.carteiraEmitida]);
 
   useFocusEffect(
     useCallback(() => {
@@ -37,6 +50,7 @@ export default function FlanelinhaHomeScreen() {
 
       return () => {
         cancelled = true;
+        setSuccessMessage(null);
       };
     }, [])
   );
@@ -60,6 +74,7 @@ export default function FlanelinhaHomeScreen() {
   if (!carteiraAtual) {
     return (
       <View style={styles.container}>
+        {successMessage ? <Banner type="success" message={successMessage} /> : null}
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>Você ainda não tem uma carteirinha</Text>
           <Text style={styles.emptyText}>
@@ -78,13 +93,12 @@ export default function FlanelinhaHomeScreen() {
 
   return (
     <View style={styles.container}>
+      {successMessage ? <Banner type="success" message={successMessage} /> : null}
       <View style={[styles.card, vencida && styles.cardVencida]}>
         <Text style={styles.cardTitle}>Carteirinha de Flanelinha</Text>
         <View style={styles.cardRow}>
           <Text style={styles.cardLabel}>Número</Text>
-          <Text style={styles.cardValue}>
-            #{String(carteiraAtual.numeroCarterinha).padStart(6, "0")}
-          </Text>
+          <Text style={styles.cardValue}>{formatNumeroCarteira(carteiraAtual.numeroCarterinha)}</Text>
         </View>
         <View style={styles.cardRow}>
           <Text style={styles.cardLabel}>Ponto de Atuação</Text>

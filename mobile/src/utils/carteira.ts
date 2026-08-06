@@ -16,3 +16,7 @@ export function isCarteiraVencida(carteira: CarterinhaDto): boolean {
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR");
 }
+
+export function formatNumeroCarteira(numero: number): string {
+  return `#${String(numero).padStart(6, "0")}`;
+}
