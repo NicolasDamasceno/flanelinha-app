@@ -11,6 +11,13 @@ interface PhotoPickerProps {
   onError: (message: string) => void;
 }
 
+/**
+ * Renderiza um Fragment (sem elemento raiz) — o Avatar e o botão são filhos flex diretos do
+ * container do chamador. Por isso o próprio PhotoPicker não se centraliza: quem usa este
+ * componente precisa fornecer um View com `alignItems: "center"` ao redor dele (ver `photoRow`
+ * em cadastrar-flanelinha.tsx e flanelinha/[id].tsx) e qualquer espaçamento inferior desejado —
+ * o componente só é responsável pelo espaço entre o avatar e o próprio botão.
+ */
 export function PhotoPicker({ value, onChange, onError }: PhotoPickerProps) {
   const [isPicking, setIsPicking] = useState(false);
 
