@@ -18,6 +18,7 @@ export interface FlanelinhaDto {
   ativo: boolean;
   dataCadastro: string;
   idFiscal: number | null;
+  fotoBase64: string | null;
   carterinhas: CarterinhaDto[];
 }
 
@@ -27,6 +28,7 @@ export interface CreateFlanelinhaDto {
   cpf: string;
   pontoAtuacao: string;
   telefone: string;
+  fotoBase64: string | null;
 }
 
 export interface UpdateFlanelinhaDto {
@@ -35,4 +37,5 @@ export interface UpdateFlanelinhaDto {
   pontoAtuacao: string;
   telefone: string;
   ativo: boolean;
+  fotoBase64: string | null;
 }
