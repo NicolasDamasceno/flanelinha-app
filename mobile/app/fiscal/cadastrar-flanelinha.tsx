@@ -1,15 +1,17 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { createFlanelinha } from "@/api/flanelinha";
 import { extractErrorMessage } from "@/api/client";
 import { Banner } from "@/components/Banner";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
+import { PhotoPicker } from "@/components/PhotoPicker";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function CadastrarFlanelinhaScreen() {
+  const [fotoBase64, setFotoBase64] = useState<string | null>(null);
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [email, setEmail] = useState("");
@@ -60,7 +62,9 @@ export default function CadastrarFlanelinhaScreen() {
         email: emailValue,
         pontoAtuacao: pontoAtuacaoValue,
         telefone: telefoneValue,
+        fotoBase64,
       });
+      setFotoBase64(null);
       setNome("");
       setCpf("");
       setEmail("");
@@ -77,6 +81,10 @@ export default function CadastrarFlanelinhaScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       {errorMessage ? <Banner type="error" message={errorMessage} /> : null}
+
+      <View style={styles.photoRow}>
+        <PhotoPicker value={fotoBase64} onChange={setFotoBase64} onError={setErrorMessage} />
+      </View>
 
       <Input label="Nome" value={nome} onChangeText={setNome} />
       <Input
@@ -102,5 +110,9 @@ export default function CadastrarFlanelinhaScreen() {
 const styles = StyleSheet.create({
   container: {
     padding: 24,
+  },
+  photoRow: {
+    alignItems: "center",
+    marginBottom: 16,
   },
 });
