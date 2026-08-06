@@ -50,6 +50,20 @@ namespace api.Controllers
             return Ok(flanelinha.ToFlanelinhaDto());
         }
 
+        [HttpGet("me")]
+        [Authorize(Roles = "Flanelinha")]
+        public async Task<IActionResult> GetMe(CancellationToken ct)
+        {
+            var flanelinha = await _flanelinhaRepository.GetByIdWithCarterinhasAsync(AuthenticatedId, ct);
+
+            if (flanelinha == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(flanelinha.ToFlanelinhaDto());
+        }
+
         [HttpPost]
         [Authorize(Roles = "Fiscal")]
         public async Task<IActionResult> Create([FromBody] CreateFlanelinhaDto flanelinhaDto, CancellationToken ct)
