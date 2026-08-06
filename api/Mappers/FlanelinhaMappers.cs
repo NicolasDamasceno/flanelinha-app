@@ -5,6 +5,13 @@ namespace api.Mappers
 {
     public static class FlanelinhaMappers
     {
+        public static string? NormalizeFotoBase64(string? value)
+        {
+            if (value == null) return null;
+            var commaIndex = value.IndexOf(',');
+            return value.StartsWith("data:") && commaIndex >= 0 ? value[(commaIndex + 1)..] : value;
+        }
+
         public static FlanelinhaDto ToFlanelinhaDto(this Flanelinha flanelinhaModel)
         {
             return new FlanelinhaDto
@@ -34,7 +41,7 @@ namespace api.Mappers
                 Telefone = flanelinhaDto.Telefone,
                 Ativo = flanelinhaDto.Ativo,
                 Senha = flanelinhaDto.Senha,
-                FotoBase64 = flanelinhaDto.FotoBase64,
+                FotoBase64 = NormalizeFotoBase64(flanelinhaDto.FotoBase64),
                 DataCadastro = DateTime.UtcNow
             };
         }

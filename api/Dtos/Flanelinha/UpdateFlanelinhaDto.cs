@@ -20,6 +20,7 @@ namespace api.Dtos.Flanelinha
         [Required]
         public bool? Ativo { get; set; }
 
+        [MaxLength(1_000_000)]
         public string? FotoBase64 { get; set; }
     }
 }

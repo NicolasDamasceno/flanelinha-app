@@ -26,6 +26,7 @@ namespace api.Dtos.Flanelinha
         [MinLength(6)]
         public string Senha { get; set; } = "Senha123";
 
+        [MaxLength(1_000_000)]
         public string? FotoBase64 { get; set; }
     }
 }

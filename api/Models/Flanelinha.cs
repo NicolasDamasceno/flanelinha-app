@@ -20,6 +20,10 @@ namespace api.Models
         public string Senha {get; set;} = "Senha123";
         public DateTime DataCadastro {get; set;} = DateTime.UtcNow;
         public int? IdFiscal {get; set;}
+        /// <summary>
+        /// Base64 cru da foto (JPEG), sem o prefixo "data:image/jpeg;base64,". Esse prefixo é
+        /// responsabilidade do cliente na hora de renderizar, não é armazenado.
+        /// </summary>
         public string? FotoBase64 {get; set;}
         public List<Carterinha> Carterinhas {get; set;} = new List<Carterinha>();
     }
