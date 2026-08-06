@@ -5,6 +5,7 @@ import { colors } from "@/theme/colors";
 const items: DrawerMenuItem[] = [
   { label: "Início", route: "/flanelinha/home" },
   { label: "Solicitar Carteirinha Nova", route: "/flanelinha/solicitar-carteirinha" },
+  { label: "Atualizar Dados", route: "/flanelinha/atualizar-dados" },
 ];
 
 export default function FlanelinhaLayout() {
@@ -15,6 +16,7 @@ export default function FlanelinhaLayout() {
     >
       <Drawer.Screen name="home" options={{ title: "Início" }} />
       <Drawer.Screen name="solicitar-carteirinha" options={{ title: "Solicitar Carteirinha" }} />
+      <Drawer.Screen name="atualizar-dados" options={{ title: "Atualizar Dados" }} />
     </Drawer>
   );
 }
