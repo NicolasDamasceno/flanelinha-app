@@ -407,13 +407,16 @@ Dois acréscimos ao estado dessa tela, junto ao que a Task 6 do sub-projeto 4 j�
   continue sem mostrá-lo (decisão 6).
 - `<Avatar base64={fotoBase64} size={72} />` no topo do cartão, acima do nome — mesma composição do
   Layout A aprovado no companion visual.
-- Um botão "Exportar PDF" logo abaixo do cartão, ao lado (ou no lugar, quando vencida) do botão de
-  Solicitar Renovação. `home.tsx` já tem um retorno antecipado inteiramente separado pro estado sem
-  carteira (`if (!carteiraAtual) { ... }`, seção 3.1 do sub-projeto 4) — não existe cartão nem rodapé
-  nesse branch pra um botão desabilitado morar. Por isso o botão não é "desabilitado quando sem
-  carteira": ele simplesmente só existe nos dois branches que já renderizam o cartão (ativa e
-  vencida) — mesmo um card vencido pode ser útil de ter impresso, por exemplo enquanto aguarda a
-  renovação. O estado vazio continua exatamente como está hoje, sem nenhum botão de exportar.
+- Um botão "Exportar PDF", logo depois do bloco `{vencida ? <Button label="Solicitar Renovação" ... /> : null}`
+  que já existe no fim do único `return` que renderiza o cartão (não há dois branches ali — `vencida`
+  é só um booleano lido inline dentro de uma única árvore JSX, e "Solicitar Renovação" já só
+  aparece quando `vencida` é `true`). "Exportar PDF" renderiza sem essa condição, então: com a
+  carteira ativa, é o único botão abaixo do cartão; com a carteira vencida, os dois botões aparecem
+  juntos (um não substitui o outro) — mesmo um card vencido pode ser útil de ter impresso, por
+  exemplo enquanto aguarda a renovação. `home.tsx` tem um retorno antecipado totalmente separado pro
+  estado sem carteira (`if (!carteiraAtual) { ... }`, seção 3.1 do sub-projeto 4), sem cartão nem
+  rodapé — "Exportar PDF" não existe nesse branch, não é um botão desabilitado, simplesmente não é
+  renderizado ali.
 
 ## 4. Geração do PDF (`src/utils/pdf.ts`)
 
@@ -541,7 +544,8 @@ real:
   os campos corretos (incluindo CPF), QR code escaneia pro número certo.
 - Exportar PDF sem foto → placeholder aparece no PDF, nada quebra.
 - Exportar PDF sem carteira → botão não aparece na tela (estado vazio, sem cartão).
-- Exportar PDF com carteira vencida → botão habilitado, PDF gerado normalmente.
+- Exportar PDF com carteira vencida → botão aparece junto com "Solicitar Renovação", PDF gerado
+  normalmente.
 
 ## Fora de escopo
 
