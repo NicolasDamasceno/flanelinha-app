@@ -33,7 +33,13 @@ apiClient.interceptors.response.use(
 
 const GENERIC_CONNECTION_ERROR = "Não foi possível conectar. Tente novamente.";
 
+export class DisplayableError extends Error {}
+
 export function extractErrorMessage(error: unknown): string {
+  if (error instanceof DisplayableError) {
+    return error.message;
+  }
+
   if (!axios.isAxiosError(error) || !error.response) {
     return GENERIC_CONNECTION_ERROR;
   }
