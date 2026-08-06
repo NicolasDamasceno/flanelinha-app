@@ -1,4 +1,5 @@
 using api.Data;
+using api.Dtos.Flanelinha;
 using api.Interfaces;
 using api.Models;
 using Microsoft.EntityFrameworkCore;
@@ -16,11 +17,32 @@ namespace api.Repositories
             return await _dbSet.FirstOrDefaultAsync(f => f.Cpf == cpf, ct);
         }
 
-        public async Task<List<Flanelinha>> GetAllByFiscalWithCarterinhasAsync(int idFiscal, CancellationToken ct = default)
+        public async Task<List<FlanelinhaDto>> GetAllByFiscalWithCarterinhasAsync(int idFiscal, CancellationToken ct = default)
         {
             return await _dbSet
-                .Include(f => f.Carterinhas)
                 .Where(f => f.IdFiscal == idFiscal)
+                .Select(f => new FlanelinhaDto
+                {
+                    IdFlanel = f.IdFlanel,
+                    Nome = f.Nome,
+                    Email = f.Email,
+                    Cpf = f.Cpf,
+                    PontoAtuacao = f.PontoAtuacao,
+                    Telefone = f.Telefone,
+                    Ativo = f.Ativo,
+                    DataCadastro = f.DataCadastro,
+                    IdFiscal = f.IdFiscal,
+                    FotoBase64 = null,
+                    Carterinhas = f.Carterinhas.Select(c => new CarterinhaDto
+                    {
+                        IdCarterinha = c.IdCarterinha,
+                        NumeroCarterinha = c.NumeroCarterinha,
+                        DataEmissao = c.DataEmissao,
+                        DataValidade = c.DataValidade,
+                        Ativo = c.Ativo,
+                        Tipo = c.Tipo
+                    }).ToList()
+                })
                 .ToListAsync(ct);
         }
 

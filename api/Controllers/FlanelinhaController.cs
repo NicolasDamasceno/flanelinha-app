@@ -28,7 +28,7 @@ namespace api.Controllers
         public async Task<IActionResult> GetAll(CancellationToken ct)
         {
             var flanelinhas = await _flanelinhaRepository.GetAllByFiscalWithCarterinhasAsync(AuthenticatedId, ct);
-            return Ok(flanelinhas.Select(f => f.ToFlanelinhaDto()));
+            return Ok(flanelinhas);
         }
 
         [HttpGet("{id}")]
