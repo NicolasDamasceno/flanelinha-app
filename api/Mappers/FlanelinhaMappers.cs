@@ -3,6 +3,10 @@ using api.Models;
 
 namespace api.Mappers
 {
+    // ATENÇÃO: existe uma segunda projeção Flanelinha -> FlanelinhaDto, escrita à mão dentro do
+    // LINQ em FlanelinhaRepository.GetAllByFiscalWithCarterinhasAsync (o EF não traduz estes
+    // mappers). Campo novo no DTO precisa ser adicionado NOS DOIS lugares — exceto FotoBase64,
+    // que é null lá de propósito.
     public static class FlanelinhaMappers
     {
         public static string? NormalizeFotoBase64(string? value)
