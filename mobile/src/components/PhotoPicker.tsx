@@ -57,9 +57,7 @@ export function PhotoPicker({ value, onChange, onError }: PhotoPickerProps) {
 
 const styles = StyleSheet.create({
   button: {
-    alignSelf: "center",
     marginTop: 8,
-    marginBottom: 16,
     paddingVertical: 6,
     paddingHorizontal: 14,
   },

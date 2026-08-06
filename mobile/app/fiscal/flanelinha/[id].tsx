@@ -7,6 +7,7 @@ import { Banner } from "@/components/Banner";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Modal } from "@/components/Modal";
+import { PhotoPicker } from "@/components/PhotoPicker";
 import { colors } from "@/theme/colors";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -20,6 +21,7 @@ export default function FlanelinhaDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  const [fotoBase64, setFotoBase64] = useState<string | null>(null);
   const [cpf, setCpf] = useState("");
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -54,6 +56,7 @@ export default function FlanelinhaDetailScreen() {
         .then((data) => {
           if (cancelled) return;
           navigation.setOptions({ title: data.nome });
+          setFotoBase64(data.fotoBase64);
           setCpf(data.cpf);
           setNome(data.nome);
           setEmail(data.email);
@@ -109,6 +112,7 @@ export default function FlanelinhaDetailScreen() {
         pontoAtuacao: pontoAtuacaoValue,
         telefone: telefoneValue,
         ativo,
+        fotoBase64,
       });
       if (activeIdRef.current !== targetId) return;
       router.replace({ pathname: "/fiscal/flanelinhas", params: { edicaoSucesso: "1" } });
@@ -154,6 +158,17 @@ export default function FlanelinhaDetailScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       {errorMessage ? <Banner type="error" message={errorMessage} /> : null}
+
+      <View style={styles.photoRow}>
+        <PhotoPicker
+          value={fotoBase64}
+          onChange={(base64) => {
+            setFotoBase64(base64);
+            setErrorMessage(null);
+          }}
+          onError={setErrorMessage}
+        />
+      </View>
 
       <Text style={styles.readonlyLabel}>CPF</Text>
       <Text style={styles.readonlyValue}>{cpf}</Text>
@@ -216,6 +231,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+  photoRow: {
+    alignItems: "center",
+    marginBottom: 16,
   },
   readonlyLabel: {
     fontSize: 14,

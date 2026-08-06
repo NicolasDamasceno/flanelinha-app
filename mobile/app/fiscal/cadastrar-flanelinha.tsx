@@ -83,7 +83,14 @@ export default function CadastrarFlanelinhaScreen() {
       {errorMessage ? <Banner type="error" message={errorMessage} /> : null}
 
       <View style={styles.photoRow}>
-        <PhotoPicker value={fotoBase64} onChange={setFotoBase64} onError={setErrorMessage} />
+        <PhotoPicker
+          value={fotoBase64}
+          onChange={(base64) => {
+            setFotoBase64(base64);
+            setErrorMessage(null);
+          }}
+          onError={setErrorMessage}
+        />
       </View>
 
       <Input label="Nome" value={nome} onChangeText={setNome} />
