@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text } from "react-native";
 import { pickAndCompressPhoto } from "@/utils/photo";
+import { DisplayableError } from "@/api/client";
+import { Avatar } from "@/components/Avatar";
 import { colors } from "@/theme/colors";
 
 interface PhotoPickerProps {
   value: string | null;
-  onChange: (base64: string | null) => void;
+  onChange: (base64: string) => void;
   onError: (message: string) => void;
 }
 
@@ -26,52 +28,38 @@ export function PhotoPicker({ value, onChange, onError }: PhotoPickerProps) {
       const base64 = await pickAndCompressPhoto(source);
       if (base64) onChange(base64);
     } catch (error) {
-      onError(error instanceof Error ? error.message : "Não foi possível obter a foto.");
+      onError(error instanceof DisplayableError ? error.message : "Não foi possível obter a foto.");
     } finally {
       setIsPicking(false);
     }
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.preview}>
-        {value ? (
-          <Image source={{ uri: `data:image/jpeg;base64,${value}` }} style={styles.image} />
+    <>
+      <Avatar base64={value} size={96} />
+      <Pressable
+        onPress={handlePress}
+        disabled={isPicking}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: isPicking, busy: isPicking }}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        style={styles.button}
+      >
+        {isPicking ? (
+          <ActivityIndicator color={colors.primary} size="small" />
         ) : (
-          <Text style={styles.placeholder}>Sem foto</Text>
+          <Text style={styles.buttonText}>{value ? "Trocar Foto" : "Adicionar Foto"}</Text>
         )}
-      </View>
-      <Pressable onPress={handlePress} disabled={isPicking} style={styles.button}>
-        <Text style={styles.buttonText}>{value ? "Trocar Foto" : "Adicionar Foto"}</Text>
       </Pressable>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  preview: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    marginBottom: 8,
-  },
-  image: {
-    width: 96,
-    height: 96,
-  },
-  placeholder: {
-    fontSize: 11,
-    color: colors.textMuted,
-  },
   button: {
+    alignSelf: "center",
+    marginTop: 8,
+    marginBottom: 16,
     paddingVertical: 6,
     paddingHorizontal: 14,
   },
