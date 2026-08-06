@@ -19,6 +19,7 @@ export default function FlanelinhaHomeScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [nome, setNome] = useState("");
   const [pontoAtuacao, setPontoAtuacao] = useState("");
   const [carteiraAtual, setCarteiraAtual] = useState<CarterinhaDto | null>(null);
 
@@ -38,6 +39,7 @@ export default function FlanelinhaHomeScreen() {
       getMyFlanelinha()
         .then((data) => {
           if (cancelled) return;
+          setNome(data.nome);
           setPontoAtuacao(data.pontoAtuacao);
           setCarteiraAtual(getCarteiraAtual(data.carterinhas));
         })
@@ -96,6 +98,7 @@ export default function FlanelinhaHomeScreen() {
       {successMessage ? <Banner type="success" message={successMessage} /> : null}
       <View style={[styles.card, vencida && styles.cardVencida]}>
         <Text style={styles.cardTitle}>Carteirinha de Flanelinha</Text>
+        <Text style={styles.cardName}>{nome}</Text>
         <View style={styles.cardRow}>
           <Text style={styles.cardLabel}>Número</Text>
           <Text style={styles.cardValue}>{formatNumeroCarteira(carteiraAtual.numeroCarterinha)}</Text>
@@ -126,7 +129,7 @@ export default function FlanelinhaHomeScreen() {
             </Text>
           </View>
           <View style={vencida ? styles.qrDimmed : undefined}>
-            <QrCode value={String(carteiraAtual.numeroCarterinha)} size={64} />
+            <QrCode value={String(carteiraAtual.numeroCarterinha)} size={96} />
           </View>
         </View>
       </View>
@@ -184,6 +187,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textTransform: "uppercase",
     fontWeight: "700",
+  },
+  cardName: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.text,
+    marginTop: 4,
   },
   cardRow: {
     flexDirection: "row",

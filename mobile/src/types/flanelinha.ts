@@ -5,7 +5,7 @@ export interface CarterinhaDto {
   dataValidade: string;
   ativo: boolean;
   tipo: number; // TipoCarterinha do backend, serializado como int — 1 = PrimeiraVia, 2 =
-                // SegundaVia. Não usado nesta etapa (nenhuma tela lê carterinhas ainda).
+                // SegundaVia. Não usado por nenhuma tela hoje.
 }
 
 export interface FlanelinhaDto {
