@@ -62,6 +62,7 @@ export default function FlanelinhaHomeScreen() {
       return () => {
         cancelled = true;
         setSuccessMessage(null);
+        setExportError(null);
       };
     }, [])
   );

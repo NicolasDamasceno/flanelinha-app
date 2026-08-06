@@ -3,7 +3,7 @@ import * as Sharing from "expo-sharing";
 import { DisplayableError } from "@/api/client";
 import { getQrMatrix } from "@/utils/qrcode";
 import { colors } from "@/theme/colors";
-import { formatDate, formatNumeroCarteira } from "@/utils/carteira";
+import { formatDate, formatNumeroCarteira, isCarteiraVencida } from "@/utils/carteira";
 import type { CarterinhaDto } from "@/types/flanelinha";
 
 interface CarteiraPdfData {
@@ -45,6 +45,7 @@ function escapeHtml(value: string): string {
 }
 
 function buildCardHtml(data: CarteiraPdfData): string {
+  const vencida = isCarteiraVencida(data.carteira);
   const fotoHtml = data.fotoBase64
     ? `<img src="data:image/jpeg;base64,${data.fotoBase64}" style="width:88px;height:88px;border-radius:44px;object-fit:cover;" />`
     : `<div style="width:88px;height:88px;border-radius:44px;background:${colors.border};"></div>`;
@@ -52,7 +53,7 @@ function buildCardHtml(data: CarteiraPdfData): string {
   return `
     <html>
       <body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;font-family:Roboto,sans-serif;">
-        <div style="width:520px;border:2px solid ${colors.primary};border-radius:16px;padding:20px;box-sizing:border-box;">
+        <div style="width:520px;border:2px solid ${vencida ? colors.error : colors.primary};border-radius:16px;padding:20px;box-sizing:border-box;">
           <div style="font-size:11px;letter-spacing:1.5px;color:${colors.textMuted};text-transform:uppercase;font-weight:700;text-align:center;border-bottom:1px solid ${colors.border};padding-bottom:10px;margin-bottom:14px;">
             Carteira de Flanelinha
           </div>
@@ -75,8 +76,9 @@ function buildCardHtml(data: CarteiraPdfData): string {
             </div>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px dashed ${colors.border};">
+            <span style="font-size:12px;font-weight:700;color:${vencida ? colors.error : colors.success};">${vencida ? "VENCIDA" : "ATIVA"}</span>
             <span style="font-size:12px;color:${colors.text};font-weight:600;">CPF ${escapeHtml(formatCpf(data.cpf))}</span>
-            ${qrMatrixToHtml(String(data.carteira.numeroCarterinha), 4)}
+            <div style="opacity:${vencida ? 0.3 : 1};">${qrMatrixToHtml(String(data.carteira.numeroCarterinha), 4)}</div>
           </div>
         </div>
       </body>
@@ -91,11 +93,18 @@ const A4_HEIGHT_PX = 842;
 
 export async function exportCarteiraPdf(data: CarteiraPdfData): Promise<void> {
   const html = buildCardHtml(data);
-  const { uri } = await Print.printToFileAsync({ html, width: A4_WIDTH_PX, height: A4_HEIGHT_PX });
 
-  const canShare = await Sharing.isAvailableAsync();
-  if (!canShare) {
-    throw new DisplayableError("Não foi possível compartilhar o PDF neste dispositivo.");
+  try {
+    const { uri } = await Print.printToFileAsync({ html, width: A4_WIDTH_PX, height: A4_HEIGHT_PX });
+
+    const canShare = await Sharing.isAvailableAsync();
+    if (!canShare) {
+      throw new DisplayableError("Não foi possível compartilhar o PDF neste dispositivo.");
+    }
+
+    await Sharing.shareAsync(uri, { mimeType: "application/pdf" });
+  } catch (error) {
+    if (error instanceof DisplayableError) throw error;
+    throw new DisplayableError("Não foi possível gerar o PDF. Tente novamente.");
   }
-  await Sharing.shareAsync(uri, { mimeType: "application/pdf" });
 }
