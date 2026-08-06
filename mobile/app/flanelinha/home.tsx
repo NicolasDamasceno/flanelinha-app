@@ -3,12 +3,14 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { getMyFlanelinha } from "@/api/flanelinha";
 import { extractErrorMessage } from "@/api/client";
+import { Avatar } from "@/components/Avatar";
 import { Banner } from "@/components/Banner";
 import { Button } from "@/components/Button";
 import { QrCode } from "@/components/QrCode";
 import { colors } from "@/theme/colors";
 import type { CarterinhaDto } from "@/types/flanelinha";
 import { formatDate, formatNumeroCarteira, getCarteiraAtual, isCarteiraVencida } from "@/utils/carteira";
+import { exportCarteiraPdf } from "@/utils/pdf";
 
 type SuccessParams = { carteiraEmitida?: string };
 
@@ -20,8 +22,13 @@ export default function FlanelinhaHomeScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [nome, setNome] = useState("");
+  const [cpf, setCpf] = useState("");
   const [pontoAtuacao, setPontoAtuacao] = useState("");
+  const [fotoBase64, setFotoBase64] = useState<string | null>(null);
   const [carteiraAtual, setCarteiraAtual] = useState<CarterinhaDto | null>(null);
+
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     if (params.carteiraEmitida === "1") {
@@ -40,7 +47,9 @@ export default function FlanelinhaHomeScreen() {
         .then((data) => {
           if (cancelled) return;
           setNome(data.nome);
+          setCpf(data.cpf);
           setPontoAtuacao(data.pontoAtuacao);
+          setFotoBase64(data.fotoBase64);
           setCarteiraAtual(getCarteiraAtual(data.carterinhas));
         })
         .catch((error) => {
@@ -56,6 +65,21 @@ export default function FlanelinhaHomeScreen() {
       };
     }, [])
   );
+
+  async function handleExportPdf() {
+    if (!carteiraAtual) return;
+
+    setExportError(null);
+    setIsExporting(true);
+
+    try {
+      await exportCarteiraPdf({ nome, cpf, pontoAtuacao, fotoBase64, carteira: carteiraAtual });
+    } catch (error) {
+      setExportError(extractErrorMessage(error));
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -96,8 +120,12 @@ export default function FlanelinhaHomeScreen() {
   return (
     <View style={styles.container}>
       {successMessage ? <Banner type="success" message={successMessage} /> : null}
+      {exportError ? <Banner type="error" message={exportError} /> : null}
       <View style={[styles.card, vencida && styles.cardVencida]}>
         <Text style={styles.cardTitle}>Carteirinha de Flanelinha</Text>
+        <View style={styles.cardAvatarRow}>
+          <Avatar base64={fotoBase64} size={72} />
+        </View>
         <Text style={styles.cardName}>{nome}</Text>
         <View style={styles.cardRow}>
           <Text style={styles.cardLabel}>Número</Text>
@@ -139,6 +167,9 @@ export default function FlanelinhaHomeScreen() {
           onPress={() => router.push("/flanelinha/solicitar-carteirinha")}
         />
       ) : null}
+      <View style={styles.exportButtonSpacing}>
+        <Button label="Exportar PDF" variant="secondary" onPress={handleExportPdf} loading={isExporting} />
+      </View>
     </View>
   );
 }
@@ -188,11 +219,16 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     fontWeight: "700",
   },
+  cardAvatarRow: {
+    alignItems: "center",
+    marginTop: 8,
+  },
   cardName: {
     fontSize: 18,
     fontWeight: "700",
     color: colors.text,
-    marginTop: 4,
+    marginTop: 8,
+    textAlign: "center",
   },
   cardRow: {
     flexDirection: "row",
@@ -225,5 +261,8 @@ const styles = StyleSheet.create({
   },
   qrDimmed: {
     opacity: 0.3,
+  },
+  exportButtonSpacing: {
+    marginTop: 12,
   },
 });
