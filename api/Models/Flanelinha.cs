@@ -20,6 +20,7 @@ namespace api.Models
         public string Senha {get; set;} = "Senha123";
         public DateTime DataCadastro {get; set;} = DateTime.UtcNow;
         public int? IdFiscal {get; set;}
+        public string? FotoBase64 {get; set;}
         public List<Carterinha> Carterinhas {get; set;} = new List<Carterinha>();
     }
 }

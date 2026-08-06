@@ -126,6 +126,7 @@ namespace api.Controllers
             flanelinha.PontoAtuacao = dto.PontoAtuacao;
             flanelinha.Telefone = dto.Telefone;
             flanelinha.Ativo = dto.Ativo!.Value;
+            flanelinha.FotoBase64 = dto.FotoBase64;
 
             await _flanelinhaRepository.SaveChangesAsync(ct);
 

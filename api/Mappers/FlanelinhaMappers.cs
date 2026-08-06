@@ -18,6 +18,7 @@ namespace api.Mappers
                 Ativo = flanelinhaModel.Ativo,
                 DataCadastro = flanelinhaModel.DataCadastro,
                 IdFiscal = flanelinhaModel.IdFiscal,
+                FotoBase64 = flanelinhaModel.FotoBase64,
                 Carterinhas = flanelinhaModel.Carterinhas.Select(c => c.ToCarterinhaDto()).ToList()
             };
         }
@@ -33,6 +34,7 @@ namespace api.Mappers
                 Telefone = flanelinhaDto.Telefone,
                 Ativo = flanelinhaDto.Ativo,
                 Senha = flanelinhaDto.Senha,
+                FotoBase64 = flanelinhaDto.FotoBase64,
                 DataCadastro = DateTime.UtcNow
             };
         }
