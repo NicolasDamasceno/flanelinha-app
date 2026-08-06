@@ -29,7 +29,8 @@
         "expo-image-picker",
         {
           "photosPermission": "O app precisa de acesso às fotos para definir a foto do Flanelinha.",
-          "cameraPermission": "O app precisa da câmera para tirar a foto do Flanelinha."
+          "cameraPermission": "O app precisa da câmera para tirar a foto do Flanelinha.",
+          "microphonePermission": false
         }
       ]
     ],
