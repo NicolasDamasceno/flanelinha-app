@@ -8,11 +8,17 @@ interface AvatarProps {
 
 export function Avatar({ base64, size }: AvatarProps) {
   return (
-    <View style={[styles.container, { width: size, height: size, borderRadius: size / 2 }]}>
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={base64 ? "Foto do Flanelinha" : "Sem foto"}
+      style={[styles.container, { width: size, height: size, borderRadius: size / 2 }]}
+    >
       {base64 ? (
         <Image
           source={{ uri: `data:image/jpeg;base64,${base64}` }}
           style={{ width: size, height: size, borderRadius: size / 2 }}
+          resizeMode="cover"
         />
       ) : (
         <Text style={{ fontSize: size * 0.4 }}>👤</Text>
