@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, Text } from "react-native";
 import { changePassword } from "@/api/auth";
 import { extractErrorMessage } from "@/api/client";
 import { Banner } from "@/components/Banner";
@@ -56,7 +56,7 @@ export default function AlterarSenhaScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <Text style={styles.title}>Alterar Senha</Text>
       <Text style={styles.subtitle}>
         Este é seu primeiro acesso. Defina uma nova senha para continuar.
@@ -82,7 +82,7 @@ export default function AlterarSenhaScreen() {
       />
 
       <Button label="Salvar" onPress={handleSubmit} loading={isSubmitting} />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

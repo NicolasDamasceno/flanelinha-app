@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { createFlanelinha } from "@/api/flanelinha";
 import { extractErrorMessage } from "@/api/client";
 import { Banner } from "@/components/Banner";
@@ -79,7 +79,11 @@ export default function CadastrarFlanelinhaScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       {errorMessage ? <Banner type="error" message={errorMessage} /> : null}
 
       <View style={styles.photoRow}>
@@ -110,11 +114,15 @@ export default function CadastrarFlanelinhaScreen() {
       />
 
       <Button label="Cadastrar" onPress={handleSubmit} loading={isSubmitting} />
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   container: {
     padding: 24,
   },

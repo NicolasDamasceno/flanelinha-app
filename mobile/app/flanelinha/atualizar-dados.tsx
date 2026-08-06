@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
 import { changeFlanelinhaPassword, updatePerfilFlanelinha } from "@/api/flanelinha";
 import { extractErrorMessage } from "@/api/client";
 import { Banner } from "@/components/Banner";
@@ -140,59 +140,64 @@ export default function FlanelinhaAtualizarDadosScreen() {
   }
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-      automaticallyAdjustKeyboardInsets
-    >
-      {dadosError ? <Banner type="error" message={dadosError.text} /> : null}
-      {dadosSuccess ? <Banner type="success" message={dadosSuccess.text} /> : null}
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+      >
+        {dadosError ? <Banner type="error" message={dadosError.text} /> : null}
+        {dadosSuccess ? <Banner type="success" message={dadosSuccess.text} /> : null}
 
-      <Input label="Nome" value={nome} onChangeText={setNome} />
-      <Input
-        label="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      <Button label="Salvar Dados" onPress={handleSaveDados} loading={isSavingDados} />
+        <Input label="Nome" value={nome} onChangeText={setNome} />
+        <Input
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <Button label="Salvar Dados" onPress={handleSaveDados} loading={isSavingDados} />
 
-      <Text style={styles.sectionTitle}>Trocar Senha</Text>
+        <Text style={styles.sectionTitle}>Trocar Senha</Text>
 
-      {senhaError ? <Banner type="error" message={senhaError.text} /> : null}
-      {senhaSuccess ? <Banner type="success" message={senhaSuccess.text} /> : null}
+        {senhaError ? <Banner type="error" message={senhaError.text} /> : null}
+        {senhaSuccess ? <Banner type="success" message={senhaSuccess.text} /> : null}
 
-      <Input
-        label="Senha Atual"
-        value={senhaAtual}
-        onChangeText={setSenhaAtual}
-        secureTextEntry
-        textContentType="password"
-        autoComplete="password"
-      />
-      <Input
-        label="Nova Senha"
-        value={novaSenha}
-        onChangeText={setNovaSenha}
-        secureTextEntry
-        textContentType="newPassword"
-        autoComplete="new-password"
-      />
-      <Input
-        label="Confirmar Nova Senha"
-        value={confirmarSenha}
-        onChangeText={setConfirmarSenha}
-        secureTextEntry
-        textContentType="newPassword"
-        autoComplete="new-password"
-      />
-      <Button label="Trocar Senha" onPress={handleChangePassword} loading={isSavingSenha} />
-    </ScrollView>
+        <Input
+          label="Senha Atual"
+          value={senhaAtual}
+          onChangeText={setSenhaAtual}
+          secureTextEntry
+          textContentType="password"
+          autoComplete="password"
+        />
+        <Input
+          label="Nova Senha"
+          value={novaSenha}
+          onChangeText={setNovaSenha}
+          secureTextEntry
+          textContentType="newPassword"
+          autoComplete="new-password"
+        />
+        <Input
+          label="Confirmar Nova Senha"
+          value={confirmarSenha}
+          onChangeText={setConfirmarSenha}
+          secureTextEntry
+          textContentType="newPassword"
+          autoComplete="new-password"
+        />
+        <Button label="Trocar Senha" onPress={handleChangePassword} loading={isSavingSenha} />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   container: {
     padding: 24,
   },

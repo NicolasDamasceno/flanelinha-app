@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, Text } from "react-native";
 import { extractErrorMessage } from "@/api/client";
 import { Banner } from "@/components/Banner";
 import { Button } from "@/components/Button";
@@ -53,7 +53,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <Text style={styles.title}>Entrar</Text>
 
       {errorMessage ? <Banner type="error" message={errorMessage} /> : null}
@@ -78,7 +78,7 @@ export default function LoginScreen() {
       />
 
       <Button label="Entrar" onPress={handleSubmit} loading={isSubmitting} />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

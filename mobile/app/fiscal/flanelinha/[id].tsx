@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams, useNavigation } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { deleteFlanelinha, getFlanelinha, updateFlanelinha } from "@/api/flanelinha";
 import { extractErrorMessage } from "@/api/client";
 import { Banner } from "@/components/Banner";
@@ -156,7 +156,11 @@ export default function FlanelinhaDetailScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       {errorMessage ? <Banner type="error" message={errorMessage} /> : null}
 
       <View style={styles.photoRow}>
@@ -219,11 +223,15 @@ export default function FlanelinhaDetailScreen() {
         {deleteError ? <Banner type="error" message={deleteError} /> : null}
         <Text>Tem certeza que deseja excluir {nome}? Essa ação não pode ser desfeita.</Text>
       </Modal>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   container: {
     padding: 24,
   },
