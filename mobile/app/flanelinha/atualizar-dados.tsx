@@ -1,33 +1,25 @@
 import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
-import { changeFiscalPassword, updateFiscalPerfil } from "@/api/fiscal";
+import { changeFlanelinhaPassword, updatePerfilFlanelinha } from "@/api/flanelinha";
 import { extractErrorMessage } from "@/api/client";
 import { Banner } from "@/components/Banner";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { useAuth } from "@/context/AuthContext";
 import { colors } from "@/theme/colors";
-import type { FiscalPerfil } from "@/types/auth";
+import type { FlanelinhaPerfil } from "@/types/auth";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function FiscalPerfilScreen() {
+export default function FlanelinhaAtualizarDadosScreen() {
   const { session, updateProfile } = useAuth();
-  // Optional, not cast to a definite FiscalPerfil: this screen stays mounted while the Drawer is
-  // alive, and it's the screen the "Sair" verification step actually logs out from (Task 9) —
-  // logout() clears the session synchronously before navigating away, so a re-render with
-  // session === null is not just possible here, it's the expected path. useState below only
-  // needs perfil's fields for their *initial* mount-time value, so a safe fallback is enough;
-  // the render guard further down handles everything after mount.
-  const perfil = session?.perfil as FiscalPerfil | undefined;
+  // Optional, not cast to a definite FlanelinhaPerfil: same rationale as fiscal/perfil.tsx — this
+  // screen stays mounted while the Drawer is alive, and logout() clears the session synchronously
+  // before navigating away, so a re-render with session === null is expected here too.
+  const perfil = session?.perfil as FlanelinhaPerfil | undefined;
 
   const [nome, setNome] = useState(perfil?.nome ?? "");
   const [email, setEmail] = useState(perfil?.email ?? "");
-  // Cada banner é um objeto novo a cada vez que é definido (mesmo com o mesmo texto de antes),
-  // não uma string direta — se fosse string, setar a MESMA mensagem duas vezes seguidas (ex.
-  // tentar salvar com Nome vazio duas vezes) faria o React ignorar o segundo set (valor
-  // "idêntico"), o efeito de auto-esconder abaixo não reiniciaria, e o timer da primeira
-  // tentativa apagaria o banner da segunda sem o usuário ter tido chance de ler.
   const [dadosError, setDadosError] = useState<{ text: string } | null>(null);
   const [dadosSuccess, setDadosSuccess] = useState<{ text: string } | null>(null);
   const [isSavingDados, setIsSavingDados] = useState(false);
@@ -39,9 +31,6 @@ export default function FiscalPerfilScreen() {
   const [senhaSuccess, setSenhaSuccess] = useState<{ text: string } | null>(null);
   const [isSavingSenha, setIsSavingSenha] = useState(false);
 
-  // Cada Banner some sozinho depois de alguns segundos, tanto em caso de sucesso quanto de erro
-  // — esta tela nunca navega pra outro lugar (ao contrário de Cadastrar/Editar Flanelinha), então
-  // sem isso a mensagem ficaria na tela indefinidamente.
   useEffect(() => {
     if (!dadosError) return;
     const timer = setTimeout(() => setDadosError(null), 3000);
@@ -88,7 +77,10 @@ export default function FiscalPerfilScreen() {
     setIsSavingDados(true);
 
     try {
-      const updated = await updateFiscalPerfil(perfil.idFiscal, { nome: nomeValue, email: emailValue });
+      const updated = await updatePerfilFlanelinha(perfil.idFlanel, {
+        nome: nomeValue,
+        email: emailValue,
+      });
       setDadosSuccess({ text: "Dados atualizados com sucesso." });
       try {
         await updateProfile(updated);
@@ -131,7 +123,7 @@ export default function FiscalPerfilScreen() {
     setIsSavingSenha(true);
 
     try {
-      await changeFiscalPassword(perfil.idFiscal, senhaAtualValue, novaSenhaValue);
+      await changeFlanelinhaPassword(perfil.idFlanel, senhaAtualValue, novaSenhaValue);
       setSenhaAtual("");
       setNovaSenha("");
       setConfirmarSenha("");
@@ -149,12 +141,22 @@ export default function FiscalPerfilScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+      >
         {dadosError ? <Banner type="error" message={dadosError.text} /> : null}
         {dadosSuccess ? <Banner type="success" message={dadosSuccess.text} /> : null}
 
         <Input label="Nome" value={nome} onChangeText={setNome} />
-        <Input label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+        <Input
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
         <Button label="Salvar Dados" onPress={handleSaveDados} loading={isSavingDados} />
 
         <Text style={styles.sectionTitle}>Trocar Senha</Text>
@@ -162,9 +164,30 @@ export default function FiscalPerfilScreen() {
         {senhaError ? <Banner type="error" message={senhaError.text} /> : null}
         {senhaSuccess ? <Banner type="success" message={senhaSuccess.text} /> : null}
 
-        <Input label="Senha Atual" value={senhaAtual} onChangeText={setSenhaAtual} secureTextEntry textContentType="password" autoComplete="password" />
-        <Input label="Nova Senha" value={novaSenha} onChangeText={setNovaSenha} secureTextEntry textContentType="newPassword" autoComplete="new-password" />
-        <Input label="Confirmar Nova Senha" value={confirmarSenha} onChangeText={setConfirmarSenha} secureTextEntry textContentType="newPassword" autoComplete="new-password" />
+        <Input
+          label="Senha Atual"
+          value={senhaAtual}
+          onChangeText={setSenhaAtual}
+          secureTextEntry
+          textContentType="password"
+          autoComplete="password"
+        />
+        <Input
+          label="Nova Senha"
+          value={novaSenha}
+          onChangeText={setNovaSenha}
+          secureTextEntry
+          textContentType="newPassword"
+          autoComplete="new-password"
+        />
+        <Input
+          label="Confirmar Nova Senha"
+          value={confirmarSenha}
+          onChangeText={setConfirmarSenha}
+          secureTextEntry
+          textContentType="newPassword"
+          autoComplete="new-password"
+        />
         <Button label="Trocar Senha" onPress={handleChangePassword} loading={isSavingSenha} />
       </ScrollView>
     </KeyboardAvoidingView>

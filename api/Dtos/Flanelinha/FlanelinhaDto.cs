@@ -14,6 +14,7 @@ namespace api.Dtos.Flanelinha
         public bool Ativo { get; set; } = false;
         public DateTime DataCadastro { get; set; } = DateTime.UtcNow;
         public int? IdFiscal { get; set; }
+        public string? FotoBase64 { get; set; }
         public List<CarterinhaDto> Carterinhas { get; set; } = new List<CarterinhaDto>();
     }
 }

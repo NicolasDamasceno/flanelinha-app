@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -26,6 +27,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (cpf: string, senha: string) => Promise<LoginResponse>;
   logout: (params?: Record<string, string>) => Promise<void>;
+  updateProfile: (perfil: FiscalPerfil | FlanelinhaPerfil) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -41,26 +43,30 @@ function toSession(response: LoginResponse): Session {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const sessionRef = useRef<Session | null>(null);
+
+  const applySession = useCallback((next: Session | null) => {
+    sessionRef.current = next;
+    setCurrentToken(next?.token ?? null);
+    setSession(next);
+  }, []);
 
   useEffect(() => {
     AsyncStorage.getItem(SESSION_STORAGE_KEY)
       .then((raw) => {
         if (raw) {
-          setSession(JSON.parse(raw) as Session);
+          const parsed = JSON.parse(raw) as Session;
+          applySession(parsed);
         }
       })
       .finally(() => setIsLoading(false));
-  }, []);
-
-  useEffect(() => {
-    setCurrentToken(session?.token ?? null);
-  }, [session]);
+  }, [applySession]);
 
   const logout = useCallback(async (params?: Record<string, string>) => {
-    setSession(null);
+    applySession(null);
     await AsyncStorage.removeItem(SESSION_STORAGE_KEY);
     router.replace({ pathname: "/login", params: params ?? {} });
-  }, []);
+  }, [applySession]);
 
   useEffect(() => {
     setUnauthorizedHandler(logout);
@@ -69,14 +75,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (cpf: string, senha: string) => {
     const response = await apiLogin(cpf, senha);
     const newSession = toSession(response);
-    setSession(newSession);
+    applySession(newSession);
     await AsyncStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newSession));
     return response;
-  }, []);
+  }, [applySession]);
+
+  const updateProfile = useCallback(
+    async (perfil: FiscalPerfil | FlanelinhaPerfil) => {
+      const current = sessionRef.current;
+      if (!current) {
+        // sessão encerrada durante a chamada (ex.: logout no meio de um salvamento) — nada a
+        // atualizar; resolve normalmente em vez de lançar, já que isso não é um erro do chamador.
+        return;
+      }
+      const nextSession: Session = { ...current, perfil };
+      applySession(nextSession);
+      await AsyncStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextSession));
+    },
+    [applySession]
+  );
 
   const value = useMemo(
-    () => ({ session, isLoading, login, logout }),
-    [session, isLoading, login, logout]
+    () => ({ session, isLoading, login, logout, updateProfile }),
+    [session, isLoading, login, logout, updateProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

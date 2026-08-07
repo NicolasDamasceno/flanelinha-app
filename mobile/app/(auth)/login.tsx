@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, KeyboardAvoidingView, Platform, StyleSheet, Text } from "react-native";
 import { extractErrorMessage } from "@/api/client";
 import { Banner } from "@/components/Banner";
 import { Button } from "@/components/Button";
@@ -53,7 +53,8 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <Image source={require("../../assets/logo-pmt-login.png")} style={styles.logo} resizeMode="contain" />
       <Text style={styles.title}>Entrar</Text>
 
       {errorMessage ? <Banner type="error" message={errorMessage} /> : null}
@@ -78,7 +79,7 @@ export default function LoginScreen() {
       />
 
       <Button label="Entrar" onPress={handleSubmit} loading={isSubmitting} />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -87,6 +88,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     padding: 24,
+  },
+  logo: {
+    width: 220,
+    height: 120,
+    alignSelf: "center",
+    marginBottom: 32,
   },
   title: {
     fontSize: 28,

@@ -28,7 +28,7 @@ namespace api.Controllers
         public async Task<IActionResult> GetAll(CancellationToken ct)
         {
             var flanelinhas = await _flanelinhaRepository.GetAllByFiscalWithCarterinhasAsync(AuthenticatedId, ct);
-            return Ok(flanelinhas.Select(f => f.ToFlanelinhaDto()));
+            return Ok(flanelinhas);
         }
 
         [HttpGet("{id}")]
@@ -50,10 +50,29 @@ namespace api.Controllers
             return Ok(flanelinha.ToFlanelinhaDto());
         }
 
+        [HttpGet("me")]
+        [Authorize(Roles = "Flanelinha")]
+        public async Task<IActionResult> GetMe(CancellationToken ct)
+        {
+            var flanelinha = await _flanelinhaRepository.GetByIdWithCarterinhasAsync(AuthenticatedId, ct);
+
+            if (flanelinha == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(flanelinha.ToFlanelinhaDto());
+        }
+
         [HttpPost]
         [Authorize(Roles = "Fiscal")]
         public async Task<IActionResult> Create([FromBody] CreateFlanelinhaDto flanelinhaDto, CancellationToken ct)
         {
+            if (await _flanelinhaRepository.GetByCpfAsync(flanelinhaDto.Cpf, ct) != null)
+            {
+                return BadRequest("Já existe um Flanelinha cadastrado com esse CPF.");
+            }
+
             var flanelinha = flanelinhaDto.ToCreateFlanelinhaDto();
             flanelinha.Senha = PasswordHasher.Hash(flanelinha.Senha);
             flanelinha.IdFiscal = AuthenticatedId;
@@ -84,6 +103,37 @@ namespace api.Controllers
             await _flanelinhaRepository.SaveChangesAsync(ct);
 
             return NoContent();
+        }
+
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Fiscal")]
+        public async Task<IActionResult> UpdateByFiscal(int id, [FromBody] UpdateFlanelinhaDto dto, CancellationToken ct)
+        {
+            var flanelinha = await _flanelinhaRepository.GetByIdAsync(id, ct);
+
+            if (flanelinha == null)
+            {
+                return NotFound();
+            }
+
+            if (flanelinha.IdFiscal != AuthenticatedId)
+            {
+                return Forbid();
+            }
+
+            flanelinha.Nome = dto.Nome;
+            flanelinha.Email = dto.Email;
+            flanelinha.PontoAtuacao = dto.PontoAtuacao;
+            flanelinha.Telefone = dto.Telefone;
+            flanelinha.Ativo = dto.Ativo!.Value;
+            if (dto.FotoBase64 != null)
+            {
+                flanelinha.FotoBase64 = FlanelinhaMappers.NormalizeFotoBase64(dto.FotoBase64);
+            }
+
+            await _flanelinhaRepository.SaveChangesAsync(ct);
+
+            return Ok(flanelinha.ToFlanelinhaDto());
         }
 
         [HttpPut("{id}/perfil")]

@@ -61,12 +61,14 @@ namespace api.Controllers
                 }
 
                 var token = _tokenGenerator.GenerateToken(flanelinha.IdFlanel, "Flanelinha", flanelinha.Nome);
+                var flanelinhaDto = flanelinha.ToFlanelinhaDto();
+                flanelinhaDto.FotoBase64 = null;
                 return Ok(new LoginResponseDto
                 {
                     Token = token,
                     TipoPerfil = "Flanelinha",
                     PrimeiroAcesso = flanelinha.PrimeiroAcesso,
-                    Perfil = flanelinha.ToFlanelinhaDto()
+                    Perfil = flanelinhaDto
                 });
             }
 

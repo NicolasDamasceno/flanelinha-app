@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+# Local secrets (connection strings, JWT signing key) - copy from appsettings.Development.json.example
+appsettings.Development.json
+
 # User-specific files
 *.rsuser
 *.suo

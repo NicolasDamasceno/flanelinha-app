@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, Text } from "react-native";
 import { changePassword } from "@/api/auth";
 import { extractErrorMessage } from "@/api/client";
 import { Banner } from "@/components/Banner";
@@ -22,13 +22,21 @@ export default function AlterarSenhaScreen() {
       return;
     }
 
-    if (!novaSenha.trim() || !confirmarSenha.trim()) {
+    const novaSenhaValue = novaSenha.trim();
+    const confirmarSenhaValue = confirmarSenha.trim();
+
+    if (!novaSenhaValue || !confirmarSenhaValue) {
       setErrorMessage("Preencha todos os campos");
       return;
     }
 
-    if (novaSenha !== confirmarSenha) {
+    if (novaSenhaValue !== confirmarSenhaValue) {
       setErrorMessage("As senhas não coincidem");
+      return;
+    }
+
+    if (novaSenhaValue.length < 6) {
+      setErrorMessage("A senha deve ter no mínimo 6 caracteres.");
       return;
     }
 
@@ -39,7 +47,7 @@ export default function AlterarSenhaScreen() {
       // Esta tela só é alcançada a partir do login de um Flanelinha em primeiro acesso
       // (app/(auth)/login.tsx), então session.perfil é sempre um FlanelinhaPerfil aqui.
       const { idFlanel } = session.perfil as FlanelinhaPerfil;
-      await changePassword(idFlanel, novaSenha);
+      await changePassword(idFlanel, novaSenhaValue);
       await logout({ senhaAlterada: "1" });
     } catch (error) {
       setErrorMessage(extractErrorMessage(error));
@@ -48,7 +56,7 @@ export default function AlterarSenhaScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <Text style={styles.title}>Alterar Senha</Text>
       <Text style={styles.subtitle}>
         Este é seu primeiro acesso. Defina uma nova senha para continuar.
@@ -74,7 +82,7 @@ export default function AlterarSenhaScreen() {
       />
 
       <Button label="Salvar" onPress={handleSubmit} loading={isSubmitting} />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

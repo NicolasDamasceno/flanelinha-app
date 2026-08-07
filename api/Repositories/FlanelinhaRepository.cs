@@ -1,4 +1,5 @@
 using api.Data;
+using api.Dtos.Flanelinha;
 using api.Interfaces;
 using api.Models;
 using Microsoft.EntityFrameworkCore;
@@ -16,11 +17,38 @@ namespace api.Repositories
             return await _dbSet.FirstOrDefaultAsync(f => f.Cpf == cpf, ct);
         }
 
-        public async Task<List<Flanelinha>> GetAllByFiscalWithCarterinhasAsync(int idFiscal, CancellationToken ct = default)
+        /// <summary>
+        /// Projeta direto pra DTO no LINQ (em vez de usar ToFlanelinhaDto()) de propósito: o EF Core
+        /// não traduz chamada de extension method dentro do Select, e é justamente a projeção no SQL
+        /// que garante que a coluna FotoBase64 nunca seja lida nesta query. FotoBase64 fica null aqui
+        /// por decisão de design — só GetById/GetMe trazem os bytes reais. Ver design doc, seção 1.
+        /// </summary>
+        public async Task<List<FlanelinhaDto>> GetAllByFiscalWithCarterinhasAsync(int idFiscal, CancellationToken ct = default)
         {
             return await _dbSet
-                .Include(f => f.Carterinhas)
                 .Where(f => f.IdFiscal == idFiscal)
+                .Select(f => new FlanelinhaDto
+                {
+                    IdFlanel = f.IdFlanel,
+                    Nome = f.Nome,
+                    Email = f.Email,
+                    Cpf = f.Cpf,
+                    PontoAtuacao = f.PontoAtuacao,
+                    Telefone = f.Telefone,
+                    Ativo = f.Ativo,
+                    DataCadastro = f.DataCadastro,
+                    IdFiscal = f.IdFiscal,
+                    FotoBase64 = null, // proposital: foto nunca é carregada na lista
+                    Carterinhas = f.Carterinhas.Select(c => new CarterinhaDto
+                    {
+                        IdCarterinha = c.IdCarterinha,
+                        NumeroCarterinha = c.NumeroCarterinha,
+                        DataEmissao = c.DataEmissao,
+                        DataValidade = c.DataValidade,
+                        Ativo = c.Ativo,
+                        Tipo = c.Tipo
+                    }).ToList()
+                })
                 .ToListAsync(ct);
         }
 

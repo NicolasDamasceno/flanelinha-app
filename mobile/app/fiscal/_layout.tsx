@@ -1,5 +1,6 @@
 import { Drawer } from "expo-router/drawer";
 import { DrawerContent, type DrawerMenuItem } from "@/components/DrawerContent";
+import { colors } from "@/theme/colors";
 
 const items: DrawerMenuItem[] = [
   { label: "Início", route: "/fiscal/home" },
@@ -10,11 +11,15 @@ const items: DrawerMenuItem[] = [
 
 export default function FiscalLayout() {
   return (
-    <Drawer drawerContent={() => <DrawerContent items={items} />}>
+    <Drawer
+      drawerContent={() => <DrawerContent items={items} />}
+      screenOptions={{ headerTintColor: colors.primary }}
+    >
       <Drawer.Screen name="home" options={{ title: "Início" }} />
       <Drawer.Screen name="cadastrar-flanelinha" options={{ title: "Cadastrar Flanelinha" }} />
       <Drawer.Screen name="flanelinhas" options={{ title: "Flanelinhas" }} />
       <Drawer.Screen name="perfil" options={{ title: "Meus Dados" }} />
+      <Drawer.Screen name="flanelinha/[id]" options={{ title: "Flanelinha" }} />
     </Drawer>
   );
 }

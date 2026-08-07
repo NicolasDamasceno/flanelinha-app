@@ -1,0 +1,14 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=postgres-api-flanelinha-app;Username=postgres;Password=123"
+  },
+  "Jwt": {
+    "Key": "troque-por-uma-chave-longa-e-aleatoria-so-para-uso-local"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}
