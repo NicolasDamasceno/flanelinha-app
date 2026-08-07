@@ -32,7 +32,6 @@ Na minha cidade, Teresina - PI, uma lei regulamentou a atividade dos flanelinhas
 - Sem suíte de testes automatizados (unitários ou de integração).
 - Sem paginação na listagem de Flanelinhas do Fiscal.
 - A logo da Prefeitura não é exibida na carteira exportada em PDF (foi removida após um bug de resolução de módulo do Metro; pode ser reintroduzida futuramente).
-- `api/appsettings.json` versionado no repositório com uma senha de banco local e uma chave JWT de desenvolvimento (ambas apenas para uso local, nunca usadas em produção) — ver seção [Configuração](#configuração-do-backend) antes de publicar um fork.
 
 ## Tech Stack
 
@@ -94,10 +93,14 @@ docs/           Especificações e planos de cada etapa do desenvolvimento
    ```bash
    docker run --name postgres-flanelinha -e POSTGRES_PASSWORD=123 -p 5432:5432 -d postgres
    ```
-2. Ajuste `api/appsettings.json` (`ConnectionStrings:DefaultConnection`) com as credenciais do seu banco, e `Jwt:Key` com uma chave própria caso vá além de uso local.
-3. Restaure os pacotes, aplique as migrations e rode a API:
+2. Copie o arquivo de configuração local de exemplo e ajuste se necessário:
    ```bash
    cd api
+   cp appsettings.Development.json.example appsettings.Development.json
+   ```
+   `appsettings.Development.json` não é versionado (contém a string de conexão e a chave de assinatura JWT) — os valores do `.example` já funcionam com o container Docker do passo 1, mas troque `Jwt:Key` por uma chave própria caso vá além de uso local.
+3. Restaure os pacotes, aplique as migrations e rode a API:
+   ```bash
    dotnet restore
    dotnet ef database update
    dotnet run
@@ -130,10 +133,10 @@ docs/           Especificações e planos de cada etapa do desenvolvimento
 | Local | Arquivo | Variável | Descrição |
 |---|---|---|---|
 | `mobile/` | `.env` (não versionado; ver `.env.example`) | `EXPO_PUBLIC_API_URL` | URL base da API consumida pelo app |
-| `api/` | `appsettings.json` | `ConnectionStrings:DefaultConnection` | String de conexão do PostgreSQL |
-| `api/` | `appsettings.json` | `Jwt:Key` / `Jwt:Issuer` / `Jwt:Audience` | Configuração de assinatura/validação do JWT |
+| `api/` | `appsettings.Development.json` (não versionado; ver `.example`) | `ConnectionStrings:DefaultConnection` | String de conexão do PostgreSQL |
+| `api/` | `appsettings.Development.json` (não versionado; ver `.example`) | `Jwt:Key` | Chave de assinatura do JWT |
 
-Nenhum arquivo `.env` com valores reais é versionado (ver `mobile/.gitignore`); apenas o `.env.example` com uma URL de desenvolvimento local.
+Nenhum arquivo com segredos reais é versionado — apenas os `.example` (`mobile/.env.example`, `api/appsettings.Development.json.example`), com valores de desenvolvimento local que não são usados em produção. `api/appsettings.json`, que continua versionado, guarda só o que não é segredo (`Jwt:Issuer`, `Jwt:Audience`, `Jwt:ExpiresInMinutes`).
 
 ## Histórico de desenvolvimento
 
