@@ -1,6 +1,6 @@
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
 import { listFlanelinhas } from "@/api/flanelinha";
 import { extractErrorMessage } from "@/api/client";
 import { Banner } from "@/components/Banner";
@@ -72,6 +72,8 @@ export default function FiscalHomeScreen() {
           </View>
         </View>
       )}
+
+      <Image source={require("@/assets/logo-home.png")} style={styles.logo} resizeMode="contain" />
     </View>
   );
 }
@@ -118,5 +120,11 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 2,
     textAlign: "center",
+  },
+  logo: {
+    width: 72,
+    height: 72,
+    alignSelf: "center",
+    marginTop: "auto",
   },
 });

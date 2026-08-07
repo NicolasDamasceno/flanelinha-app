@@ -1,6 +1,7 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { DisplayableError } from "@/api/client";
+import { LOGO_CARTERINHA_BASE64 } from "@/assets/logoCarterinha";
 import { getQrMatrix } from "@/utils/qrcode";
 import { colors } from "@/theme/colors";
 import { formatDate, formatNumeroCarteira, isCarteiraVencida } from "@/utils/carteira";
@@ -79,6 +80,9 @@ function buildCardHtml(data: CarteiraPdfData): string {
             <span style="font-size:12px;font-weight:700;color:${vencida ? colors.error : colors.success};">${vencida ? "VENCIDA" : "ATIVA"}</span>
             <span style="font-size:12px;color:${colors.text};font-weight:600;">CPF ${escapeHtml(formatCpf(data.cpf))}</span>
             <div style="opacity:${vencida ? 0.3 : 1};">${qrMatrixToHtml(String(data.carteira.numeroCarterinha), 4)}</div>
+          </div>
+          <div style="display:flex;justify-content:center;margin-top:16px;">
+            <img src="data:image/png;base64,${LOGO_CARTERINHA_BASE64}" style="height:40px;" />
           </div>
         </div>
       </body>

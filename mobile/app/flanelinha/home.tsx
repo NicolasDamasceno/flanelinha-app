@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams, useNavigation } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
 import { getMyFlanelinha } from "@/api/flanelinha";
 import { extractErrorMessage } from "@/api/client";
 import { Avatar } from "@/components/Avatar";
@@ -94,6 +94,7 @@ export default function FlanelinhaHomeScreen() {
     return (
       <View style={styles.container}>
         <Banner type="error" message={errorMessage} />
+        <Image source={require("@/assets/logo-home.png")} style={styles.logo} resizeMode="contain" />
       </View>
     );
   }
@@ -112,6 +113,7 @@ export default function FlanelinhaHomeScreen() {
           label="Solicitar Carteirinha"
           onPress={() => router.push("/flanelinha/solicitar-carteirinha")}
         />
+        <Image source={require("@/assets/logo-home.png")} style={styles.logo} resizeMode="contain" />
       </View>
     );
   }
@@ -171,6 +173,7 @@ export default function FlanelinhaHomeScreen() {
       <View style={styles.exportButtonSpacing}>
         <Button label="Exportar PDF" variant="secondary" onPress={handleExportPdf} loading={isExporting} />
       </View>
+      <Image source={require("@/assets/logo-home.png")} style={styles.logo} resizeMode="contain" />
     </View>
   );
 }
@@ -265,5 +268,11 @@ const styles = StyleSheet.create({
   },
   exportButtonSpacing: {
     marginTop: 12,
+  },
+  logo: {
+    width: 72,
+    height: 72,
+    alignSelf: "center",
+    marginTop: "auto",
   },
 });
