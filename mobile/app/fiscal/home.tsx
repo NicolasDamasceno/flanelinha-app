@@ -73,7 +73,7 @@ export default function FiscalHomeScreen() {
         </View>
       )}
 
-      <Image source={require("@/assets/logo-home.png")} style={styles.logo} resizeMode="contain" />
+      <Image source={require("../../assets/logo-home.png")} style={styles.logo} resizeMode="contain" />
     </View>
   );
 }

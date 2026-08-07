@@ -94,7 +94,7 @@ export default function FlanelinhaHomeScreen() {
     return (
       <View style={styles.container}>
         <Banner type="error" message={errorMessage} />
-        <Image source={require("@/assets/logo-home.png")} style={styles.logo} resizeMode="contain" />
+        <Image source={require("../../assets/logo-home.png")} style={styles.logo} resizeMode="contain" />
       </View>
     );
   }
@@ -113,7 +113,7 @@ export default function FlanelinhaHomeScreen() {
           label="Solicitar Carteirinha"
           onPress={() => router.push("/flanelinha/solicitar-carteirinha")}
         />
-        <Image source={require("@/assets/logo-home.png")} style={styles.logo} resizeMode="contain" />
+        <Image source={require("../../assets/logo-home.png")} style={styles.logo} resizeMode="contain" />
       </View>
     );
   }
@@ -173,7 +173,7 @@ export default function FlanelinhaHomeScreen() {
       <View style={styles.exportButtonSpacing}>
         <Button label="Exportar PDF" variant="secondary" onPress={handleExportPdf} loading={isExporting} />
       </View>
-      <Image source={require("@/assets/logo-home.png")} style={styles.logo} resizeMode="contain" />
+      <Image source={require("../../assets/logo-home.png")} style={styles.logo} resizeMode="contain" />
     </View>
   );
 }

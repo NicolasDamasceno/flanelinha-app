@@ -54,7 +54,7 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-      <Image source={require("@/assets/logo-pmt-login.png")} style={styles.logo} resizeMode="contain" />
+      <Image source={require("../../assets/logo-pmt-login.png")} style={styles.logo} resizeMode="contain" />
       <Text style={styles.title}>Entrar</Text>
 
       {errorMessage ? <Banner type="error" message={errorMessage} /> : null}
